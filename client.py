@@ -11,8 +11,8 @@ import ctypes
 key = b'dIDIXfq6xvMp0gshF8rI8-AGb41aucYBVR27nQWG2Xc='
 cipher = Fernet(key)
 
-VALID_USERNAME = "amirali"
-VALID_PASSWORD = "aka271827"
+VALID_USERNAME = "test"
+VALID_PASSWORD = "test"
 
 def authenticate():
     connection.send(Encrypt(b"Username: "))
