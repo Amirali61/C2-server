@@ -61,6 +61,7 @@ class EncryptedServer:
 
         elif "upload" in command:
             file_name = command.split(" ")[1]
+            chunk_number = 1
             try:
                 with open(file_name, "rb") as file:
                     content = self.encrypt(file.read())
@@ -68,7 +69,10 @@ class EncryptedServer:
                 self.conn.send(self.encrypt(str(len(chunks)).encode()))
                 time.sleep(1)
                 for chunk in chunks:
-                    self.conn.sendall(chunk)
+                    print(f"Chunk number {chunk_number} sent. ", end="\r",flush=True)
+                    self.conn.sendall(chunk)   
+                    time.sleep(0.02)
+                    chunk_number += 1
             except FileNotFoundError:
                 self.conn.send(self.encrypt(b"Wrong file name"))
             print(self.decrypt(self.conn.recv(1024)).decode())
@@ -76,13 +80,15 @@ class EncryptedServer:
         else:
             num_chunks = int(self.decrypt(self.conn.recv(1024)).decode())
             print(f"Chunks coming: {num_chunks}")
-            encrypted_data = b''.join(self.conn.recv(1024) for _ in range(num_chunks))
-
+            encrypted_data = b''
+            for _ in range(num_chunks):
+                encrypted_data += self.conn.recv(1024)
+                print(f"Chunk number {_} received. ", end="\r",flush=True)
             if "download" in command:
                 file_name = command.split(" ")[1]
                 with open(file_name, "ab") as file:
                     file.write(self.decrypt(encrypted_data))
-                print("Download complete")
+                print("\nDownload complete")
             else:
                 try:
                     print(self.decrypt(encrypted_data).decode())

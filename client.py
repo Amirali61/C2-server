@@ -117,6 +117,7 @@ class ClientHandler:
         time.sleep(1)
         for chunk in chunks:
             self.send(chunk)
+            time.sleep(0.02)
 
 
     def handle_commands(self,os_name):
@@ -211,7 +212,7 @@ class ClientHandler:
                     data = b''.join([self.recv() for _ in range(chunk_len)])
                     with open(filename, "ab") as f:
                         f.write(decrypt(data))
-                    self.send(encrypt(b"Upload done"))
+                    self.send(encrypt(b"\nUpload done"))
 
                 elif cmd.startswith("wall "):
                     if os_name=="Windows":
