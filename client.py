@@ -240,7 +240,7 @@ def Connect_to_server():
                 if client.authenticate():
                     client.handle_commands(operating_system)
                 sock.close()
-            except Exception as e:
+            except Exception:
                 timer = 20
                 print("Server is not up yet. Trying again in")
                 for i in range(timer,0,-1):
