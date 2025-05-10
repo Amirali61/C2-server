@@ -69,7 +69,7 @@ class EncryptedServer:
                 self.conn.send(self.encrypt(str(len(chunks)).encode()))
                 time.sleep(1)
                 for chunk in chunks:
-                    print(f"Chunk number {chunk_number} sent. ", end="\r",flush=True)
+                    print(f"Chunk number {chunk_number} of {len(chunks)} sent. ", end="\r",flush=True)
                     self.conn.sendall(chunk)   
                     time.sleep(0.02)
                     chunk_number += 1
