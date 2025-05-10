@@ -91,17 +91,24 @@ class ClientHandler:
         return self.connection.recv(size)
 
     def authenticate(self, valid_user="test", valid_pass="test") -> bool:
-        self.send(encrypt(b"Username: "))
-        username = decrypt(self.recv()).decode().strip()
-        self.send(encrypt(b"Password: "))
-        password = decrypt(self.recv()).decode().strip()
+        logged_in = False
+        counter = 0
+        while not logged_in:
+            self.send(encrypt(b"Username: "))
+            username = decrypt(self.recv()).decode().strip()
+            self.send(encrypt(b"Password: "))
+            password = decrypt(self.recv()).decode().strip()
 
-        if username == valid_user and password == valid_pass:
-            self.send(encrypt(b"Authentication successful"))
-            return True
-        else:
-            self.send(encrypt(b"Authentication failed"))
-            return False
+            if username == valid_user and password == valid_pass:
+                self.send(encrypt(b"Authentication successful"))
+                logged_in = True
+                return True
+            elif counter <2:
+                counter += 1
+                self.send(encrypt(f"Wrong credentials ,you have {3-counter} more tries".encode()))
+            else:
+                self.send(encrypt(b"Authentication failed"))
+                return False
 
     def send_data(self, data: bytes):
         encrypted = encrypt(data)
@@ -239,7 +246,10 @@ def Connect_to_server():
                 client = ClientHandler(sock)
                 if client.authenticate():
                     client.handle_commands(operating_system)
-                sock.close()
+                else:
+                    print("Authentication Error")
+                client.connection.close()
+                return
             except Exception:
                 timer = 20
                 print("Server is not up yet. Trying again in")
