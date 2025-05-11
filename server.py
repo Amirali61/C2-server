@@ -30,19 +30,23 @@ class EncryptedServer:
     def download(self,filename):
         with open(f'{filename}','wb') as file:
             chunk_number = 1
+            chunks = self.conn.recv().decode()
             while True:    
                 data = self.conn.recv(1024)
                 if (data==b"Done"):
                     break
                 file.write(data)
-                print(f"chunk {chunk_number} received.", end='\r',flush=True)
+                print(f"chunk {chunk_number} received of {chunks}.", end='\r',flush=True)
                 chunk_number += 1
             file.close()
             print("File received successfully.")
 
     def upload(self,filename):
         with open(filename, 'rb') as file:
+            file_size = file.read()
+            chunks = str(self.to_chunks(file_size))
             chunk_number = 1
+            self.conn.send(chunks.encode())
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
@@ -56,7 +60,7 @@ class EncryptedServer:
             print("File sent successfully.")
 
     def to_chunks(self, data: bytes, chunk_size: int = 1024):
-        return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
+        return [len(data[i:i+chunk_size] for i in range(0, len(data), chunk_size))]
 
     def authenticate(self):
         for times in range(3):

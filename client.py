@@ -22,7 +22,7 @@ def decrypt(data: bytes) -> bytes:
     return cipher.decrypt(data)
 
 def to_chunks(data: bytes, chunk_size: int = 1024):
-    return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
+    return [len(data[i:i+chunk_size] for i in range(0, len(data), chunk_size))]
 
 # ------------------ Smart sleep ------------------
 def smart_sleep():
@@ -94,19 +94,23 @@ class ClientHandler:
     def download(self,filename):
         with open(f'{filename}','wb') as file:
             chunk_number = 1
+            chunks = self.recv().decode()
             while True:    
                 data = self.connection.recv(1024)
                 if (data == b"Done"):
                     break
                 file.write(data)
-                print(f"chunk {chunk_number} received.", end='\r',flush=True)
+                print(f"chunk {chunk_number} received of {chunks}.", end='\r',flush=True)
                 chunk_number += 1
             file.close()
             print("\nFile received successfully.")
         
     def upload(self,filename):
         with open(filename, 'rb') as file:
+            file_size = file.read()
+            chunks = str(to_chunks(file_size))
             chunk_number = 1
+            self.send(chunks.encode())
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
