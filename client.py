@@ -94,23 +94,19 @@ class ClientHandler:
     def download(self,filename):
         with open(f'{filename}','wb') as file:
             chunk_number = 1
-            chunks = self.recv().decode()
             while True:    
                 data = self.connection.recv(1024)
                 if (data == b"Done"):
                     break
                 file.write(data)
-                print(f"chunk {chunk_number} received of {chunks}.", end='\r',flush=True)
+                print(f"chunk {chunk_number} received of.", end='\r',flush=True)
                 chunk_number += 1
             file.close()
             print("\nFile received successfully.")
         
     def upload(self,filename):
         with open(filename, 'rb') as file:
-            file_size = file.read()
-            chunks = to_chunks(file_size)
             chunk_number = 1
-            self.send(str(len(chunks)).encode())
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
