@@ -35,7 +35,7 @@ class EncryptedServer:
                 if (data==b"Done"):
                     break
                 file.write(data)
-                print(f"chunk {chunk_number} received of.", end='\r',flush=True)
+                print(f"chunk {chunk_number} received.", end='\r',flush=True)
                 chunk_number += 1
             file.close()
             print("\nFile received successfully.")
@@ -46,7 +46,7 @@ class EncryptedServer:
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
-                    self.conn.send(b"Done")
+                    self.conn.sendall(b'Done')
                     break
                 self.conn.sendall(data_chunk)
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
