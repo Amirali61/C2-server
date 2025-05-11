@@ -95,7 +95,7 @@ class ClientHandler:
         with open(f'{filename}','wb') as file:
             chunk_number = 1
             while True:    
-                data = self.connection.recv(1024)
+                data = decrypt(self.connection.recv(1024))
                 if (data == b"Done"):
                     break
                 file.write(data)
@@ -110,9 +110,9 @@ class ClientHandler:
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
-                    self.send(b'Done')
+                    self.send(encrypt(b'Done'))
                     break
-                self.send(data_chunk)
+                self.send(encrypt(data_chunk))
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
                 time.sleep(0.01)
