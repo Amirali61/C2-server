@@ -115,7 +115,7 @@ class ClientHandler:
                 self.send(data_chunk)
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
-                time.sleep(0.02)
+                time.sleep(0.5)
             file.close()
             print("File sent successfully.")
 
