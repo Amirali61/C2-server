@@ -110,7 +110,7 @@ class ClientHandler:
             while True:
                 data_chunk = file.read(1024)
                 self.send(data_chunk)
-                if  data_chunk==None:
+                if  data_chunk==b'':
                     self.send(b'Done')
                     break
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)

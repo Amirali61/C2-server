@@ -46,7 +46,7 @@ class EncryptedServer:
             while True:
                 data_chunk = file.read(1024)
                 self.conn.sendall(data_chunk)
-                if  data_chunk == None:
+                if  data_chunk == b'':
                     self.conn.sendall(b'Done')
                     break               
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
