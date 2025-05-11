@@ -51,7 +51,7 @@ class EncryptedServer:
                     break               
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
-                time.sleep(0.5)
+                time.sleep(0.2)
             file.close()
             print("\nFile sent successfully.")
 
