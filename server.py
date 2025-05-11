@@ -29,14 +29,16 @@ class EncryptedServer:
 
     def download(self,filename):
         with open(f'{filename}','wb') as file:
+            full_data = b''
             chunk_number = 1
             while True:    
                 data = self.conn.recv(1024)
                 if (data==b"Done"):
                     break
-                file.write(data)
+                full_data += data
                 print(f"chunk {chunk_number} received.", end='\r',flush=True)
                 chunk_number += 1
+            file.write(full_data)
             file.close()
             print("\nFile received successfully.")
 
