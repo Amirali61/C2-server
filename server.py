@@ -45,10 +45,10 @@ class EncryptedServer:
             chunk_number = 1
             while True:
                 data_chunk = file.read(1024)
+                self.conn.sendall(data_chunk)
                 if not data_chunk:
                     self.conn.sendall(b'Done')
-                    break
-                self.conn.sendall(data_chunk)
+                    break               
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
                 time.sleep(0.5)
