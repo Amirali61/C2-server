@@ -51,7 +51,7 @@ class EncryptedServer:
                 self.conn.sendall(data_chunk)
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
-                time.sleep(0.01)
+                time.sleep(0.02)
             file.close()
             print("File sent successfully.")
 
