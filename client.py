@@ -110,7 +110,7 @@ class ClientHandler:
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
-                    self.sendencrypt(b'Done')
+                    self.send(b'Done')
                     break
                 self.send(data_chunk)
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
