@@ -28,32 +28,47 @@ class EncryptedServer:
         return self.cipher.decrypt(data)
 
     def download(self,filename):
+        file_size = int(self.conn.recv(1024).decode())
+        print(file_size)
+        block_size = 1024
+        num_blocks = file_size // block_size
+        remaining_bytes = file_size % block_size
         with open(f'{filename}','wb') as file:
             full_data = b''
             chunk_number = 1
-            while True:    
+            for i in range(num_blocks):    
                 data = self.conn.recv(1024)
-                if (data==b"Done"):
-                    break
                 full_data += data
                 print(f"chunk {chunk_number} received.", end='\r',flush=True)
                 chunk_number += 1
+            data = self.conn.recv(remaining_bytes)
+            full_data += data
+            print("\nLast Chunk received")
             file.write(full_data)
             file.close()
             print("\nFile received successfully.")
 
     def upload(self,filename):
+        current_path =  os.path.abspath(os.getcwd())
+        file_path = os.path.join(current_path,filename)
+        file_size_upload = str(os.path.getsize(file_path))
+        self.conn.sendall(file_size_upload.encode())
+        print(file_size_upload)
+        time.sleep(0.2)
+        block_size = 1024
+        num_blocks = int(file_size_upload) // block_size
+        remaining_bytes = int(file_size_upload) % block_size
         with open(filename, 'rb') as file:
             chunk_number = 1
-            while True:
+            for i in range(num_blocks):
                 data_chunk = file.read(1024)
-                if  data_chunk == b'':
-                    self.conn.sendall(b'Done')
-                    break    
-                self.conn.sendall(data_chunk)           
+                self.conn.sendall(data_chunk)
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
                 time.sleep(0.2)
+            data_chunk = file.read(remaining_bytes)
+            self.conn.sendall(data_chunk)
+            print("\nLast chunk sent")
             file.close()
             print("\nFile sent successfully.")
 
@@ -92,11 +107,13 @@ class EncryptedServer:
         elif "upload" in command:
             file_name = command.split(" ")[1]
             self.send_command(file_name)
+            time.sleep(0.1)
             self.upload(file_name)
 
         elif "download" in command:
             file_name = command.split(" ")[1]
             self.send_command(file_name)
+            time.sleep(0.1)
             self.download(file_name)
 
         else:
