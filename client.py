@@ -78,6 +78,7 @@ def predict_operating_system():
     os_name=platform.system()
     return os_name
 
+
 # ------------------ Client Handler ------------------
 
 class ClientHandler:
@@ -89,6 +90,34 @@ class ClientHandler:
 
     def recv(self, size: int = 1024) -> bytes:
         return self.connection.recv(size)
+    
+    def download(self,filename):
+        with open(f'{filename}','wb') as file:
+            chunk_number = 1
+            while True:    
+                data = self.connection.recv(1024)
+                if (data == b"Done"):
+                    break
+                file.write(data)
+                print(f"chunk {chunk_number} received.", end='\r',flush=True)
+                chunk_number += 1
+            file.close()
+            print("\nFile received successfully.")
+        
+    def upload(self,filename):
+        with open(filename, 'rb') as file:
+            chunk_number = 1
+            while True:
+                data_chunk = file.read(1024)
+                if not data_chunk:
+                    self.send(b'Done')
+                    break
+                self.send(data_chunk)
+                print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
+                chunk_number += 1
+                time.sleep(0.01)
+            file.close()
+            print("File sent successfully.")
 
     def authenticate(self, valid_user="test", valid_pass="test") -> bool:
         logged_in = False
@@ -198,21 +227,13 @@ class ClientHandler:
                         self.send(encrypt(b"Directory change failed"))
 
                 elif cmd.startswith("download "):
-                    filename = cmd.split(" ", 1)[1]
-                    try:
-                        with open(filename, "rb") as f:
-                            content = encrypt(f.read())
-                        self.send_data(content)
-                    except:
-                        self.send(encrypt(b"Download failed"))
+                    file_name = decrypt(self.recv()).decode()
+                    self.upload(file_name)
+
 
                 elif cmd.startswith("upload "):
-                    filename = cmd.split(" ", 1)[1]
-                    chunk_len = int(decrypt(self.recv()).decode())
-                    data = b''.join([self.recv() for _ in range(chunk_len)])
-                    with open(filename, "ab") as f:
-                        f.write(decrypt(data))
-                    self.send(encrypt(b"\nUpload done"))
+                    file_name = decrypt(self.recv()).decode()
+                    self.download(file_name)
 
                 elif cmd.startswith("wall "):
                     if os_name=="Windows":
