@@ -96,10 +96,9 @@ class ClientHandler:
             chunk_number = 1
             while True:    
                 data = self.connection.recv(1024)
-                file.write(data)
                 if (data==b"Done"):
                     break
-                
+                file.write(data)
                 print(f"chunk {chunk_number} received.", end='\r',flush=True)
                 chunk_number += 1
             file.close()
@@ -110,10 +109,10 @@ class ClientHandler:
             chunk_number = 1
             while True:
                 data_chunk = file.read(1024)
-                self.send(data_chunk)
                 if  data_chunk==b'':
                     self.send(b'Done')
                     break
+                self.send(data_chunk)
                 print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
                 time.sleep(0.2)
