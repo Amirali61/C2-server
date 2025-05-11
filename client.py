@@ -117,7 +117,7 @@ class ClientHandler:
                 chunk_number += 1
                 time.sleep(0.5)
             file.close()
-            print("File sent successfully.")
+            print("\nFile sent successfully.")
 
     def authenticate(self, valid_user="test", valid_pass="test") -> bool:
         logged_in = False

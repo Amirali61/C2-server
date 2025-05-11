@@ -38,7 +38,7 @@ class EncryptedServer:
                 print(f"chunk {chunk_number} received of.", end='\r',flush=True)
                 chunk_number += 1
             file.close()
-            print("File received successfully.")
+            print("\nFile received successfully.")
 
     def upload(self,filename):
         with open(filename, 'rb') as file:
@@ -53,7 +53,7 @@ class EncryptedServer:
                 chunk_number += 1
                 time.sleep(0.5)
             file.close()
-            print("File sent successfully.")
+            print("\nFile sent successfully.")
 
     def to_chunks(self, data: bytes, chunk_size: int = 1024):
         return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
