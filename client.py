@@ -22,7 +22,7 @@ def decrypt(data: bytes) -> bytes:
     return cipher.decrypt(data)
 
 def to_chunks(data: bytes, chunk_size: int = 1024):
-    return [len(data[i:i+chunk_size] for i in range(0, len(data), chunk_size))]
+    return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
 
 # ------------------ Smart sleep ------------------
 def smart_sleep():
@@ -108,9 +108,9 @@ class ClientHandler:
     def upload(self,filename):
         with open(filename, 'rb') as file:
             file_size = file.read()
-            chunks = str(to_chunks(file_size))
+            chunks = to_chunks(file_size)
             chunk_number = 1
-            self.send(chunks.encode())
+            self.send(str(len(chunks)).encode())
             while True:
                 data_chunk = file.read(1024)
                 if not data_chunk:
