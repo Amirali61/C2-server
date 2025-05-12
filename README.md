@@ -11,37 +11,51 @@ This project consists of a Python-based encrypted remote access tool with basic 
 ## Features
 
 ### ✅ Secure Communication
-- Uses Fernet symmetric encryption to protect all data transmitted over the network.
+- Uses Fernet symmetric encryption to protect all data transmitted over the network
+- Multiple layers of code obfuscation and packing
+- Anti-debugging and anti-VM detection mechanisms
 
-### 🖥 Client Capabilities (`client.py`)
-- File operations (`download`, `upload`, `del`)
+### 🖥 Client Capabilities (`client.py` & `packed_client.py`)
+- File operations (`download`, `upload`, `del`, `encrypt`, `decrypt`)
 - Directory and network commands (`dir`, `ipconfig`, `arp -a`, `pwd`)
+- Process management (`ps`, `kill`, `system`)
+- WiFi network management (`wifi-networks`, `wifi-password`)
+- System information (`hostname`, `system`)
 - Persistent execution using Windows Scheduled Tasks
-- Wallpaper manipulation (Windows only)
-- OS detection
+- Wallpaper manipulation (Windows & Linux)
+- OS detection and cross-platform support
 - Chunked encrypted file transfers
 - Basic authentication mechanism
+- Anti-detection features:
+  - VM detection
+  - Debugger detection
+  - Random delays
+  - Code obfuscation
 
 ### 📡 Server Features (`server.py`)
 - Listens for connections on port `4444`
 - Handles authentication
 - Sends commands to the client and handles responses
 - Supports file transfer, navigation, and system command output
+- Cross-platform command support
 
 ---
 
 ## How It Works
 
 1. **Server (`server.py`)**:
-    - Listens for an incoming connection.
-    - Receives encryption key and client OS.
-    - Handles encrypted interaction and command execution.
+    - Listens for an incoming connection
+    - Receives encryption key and client OS
+    - Handles encrypted interaction and command execution
+    - Supports cross-platform commands
 
-2. **Client (`client.py`)**:
-    - Attempts to connect to the server at `[Your Server's IP]:4444`.
-    - Sends encryption key and system info.
-    - Waits for encrypted commands and executes them.
-    - Returns encrypted responses in chunks.
+2. **Client (`client.py` & `packed_client.py`)**:
+    - Attempts to connect to the server at `[Your Server's IP]:4444`
+    - Sends encryption key and system info
+    - Waits for encrypted commands and executes them
+    - Returns encrypted responses in chunks
+    - Implements anti-detection measures
+    - Supports both Windows and Linux systems
 
 ---
 
@@ -58,6 +72,12 @@ On the client machine:
 python3 client.py
 ```
 
+Or use the packed version:
+```bash
+python3 packed_client.py  # First generate the packed version
+python3 run_packed_client.py  # Then run the packed version
+```
+
 > Note: Ensure both systems have Python 3.x installed and `cryptography` library available.
 
 ### 3. Supported Commands
@@ -68,11 +88,19 @@ dir                     List directory contents
 path                    Show current working directory
 ipconfig                Show network configuration
 arp -a                  Display ARP table
+hostname                Show system hostname and details
+ps                      List running processes
+kill <PID/name>         Kill a process by PID or name
+system                  Show system resource usage (CPU & Memory)
+wifi-networks           List available WiFi networks
+wifi-password <network> Get password for a WiFi network
 cd <dir>                Change directory
 del <file>              Delete a file
 download <file>         Download file from client
 upload <file>           Upload file to client
-wall <image>            Change desktop wallpaper (Windows only)
+encrypt <file>          Encrypt a file
+decrypt <file>          Decrypt a file
+wall <image>            Change desktop wallpaper
 close / exit            Terminate session
 ```
 
@@ -85,6 +113,26 @@ close / exit            Terminate session
 ```bash
 pip install cryptography
 ```
+
+---
+
+## Security Features
+
+### Anti-Detection
+- VM detection with multiple indicators
+- Debugger detection for both Windows and Linux
+- Random delays to avoid detection
+- Code obfuscation and packing
+
+### Encryption
+- Fernet symmetric encryption for all communications
+- File encryption/decryption capabilities
+- Chunked encrypted file transfers
+
+### Cross-Platform Support
+- Windows and Linux compatibility
+- OS-specific command handling
+- Platform-aware anti-detection measures
 
 ---
 
