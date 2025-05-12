@@ -146,7 +146,7 @@ class EncryptedServer:
 
         else:
             num_chunks = int(self.decrypt(self.conn.recv(1024)).decode())
-            print(f"Chunks coming: {num_chunks}")
+            # print(f"Chunks coming: {num_chunks}")
             encrypted_data = b''
             for _ in range(num_chunks):
                 encrypted_data += self.conn.recv(1024)

