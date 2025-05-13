@@ -15,7 +15,7 @@ This project consists of a Python-based encrypted remote access tool with basic 
 - Multiple layers of code obfuscation and packing
 - Anti-debugging and anti-VM detection mechanisms
 
-### 🖥 Client Capabilities (`client.py` & `packed_client.py`)
+### 🖥 Client Capabilities (`client.py`)
 - File operations (`download`, `upload`, `del`, `encrypt`, `decrypt`)
 - Directory and network commands (`dir`, `ipconfig`, `arp -a`, `pwd`)
 - Process management (`ps`, `kill`, `system`)
@@ -49,7 +49,7 @@ This project consists of a Python-based encrypted remote access tool with basic 
     - Handles encrypted interaction and command execution
     - Supports cross-platform commands
 
-2. **Client (`client.py` & `packed_client.py`)**:
+2. **Client (`client.py`)**:
     - Attempts to connect to the server at `[Your Server's IP]:4444`
     - Sends encryption key and system info
     - Waits for encrypted commands and executes them
@@ -70,12 +70,6 @@ python3 server.py
 On the client machine:
 ```bash
 python3 client.py
-```
-
-Or use the packed version:
-```bash
-python3 packed_client.py  # First generate the packed version
-python3 run_packed_client.py  # Then run the packed version
 ```
 
 > Note: Ensure both systems have Python 3.x installed and `pycryptodome` library available.
