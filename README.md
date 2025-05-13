@@ -1,6 +1,6 @@
 # Encrypted Remote Control Tool (Python)
 
-This project consists of a Python-based encrypted remote access tool with basic client-server communication over TCP sockets. It uses symmetric encryption (Fernet from the `cryptography` library) to securely transmit data between the client and server.
+This project consists of a Python-based encrypted remote access tool with basic client-server communication over TCP sockets. It uses AES encryption (from the `pycryptodome` library) to securely transmit data between the client and server.
 
 > ⚠️ **For Educational & Research Purposes Only**
 >
@@ -11,7 +11,7 @@ This project consists of a Python-based encrypted remote access tool with basic 
 ## Features
 
 ### ✅ Secure Communication
-- Uses Fernet symmetric encryption to protect all data transmitted over the network
+- Uses AES encryption to protect all data transmitted over the network
 - Multiple layers of code obfuscation and packing
 - Anti-debugging and anti-VM detection mechanisms
 
@@ -78,7 +78,7 @@ python3 packed_client.py  # First generate the packed version
 python3 run_packed_client.py  # Then run the packed version
 ```
 
-> Note: Ensure both systems have Python 3.x installed and `cryptography` library available.
+> Note: Ensure both systems have Python 3.x installed and `pycryptodome` library available.
 
 ### 3. Supported Commands
 From the server interface:
@@ -109,9 +109,9 @@ close / exit            Terminate session
 ## Requirements
 
 - Python 3.x
-- `cryptography` library:
+- `pycryptodome` library:
 ```bash
-pip install cryptography
+pip install pycryptodome
 ```
 
 ---
@@ -125,7 +125,7 @@ pip install cryptography
 - Code obfuscation and packing
 
 ### Encryption
-- Fernet symmetric encryption for all communications
+- AES encryption in CTR mode for all communications
 - File encryption/decryption capabilities
 - Chunked encrypted file transfers
 
