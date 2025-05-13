@@ -150,6 +150,7 @@ class EncryptedServer:
             encrypted_data = b''
             for _ in range(num_chunks):
                 encrypted_data += self.conn.recv(1024)
+                self.conn.sendall(f"Chunk {_} received".encode())
             try:
                 print(self.decrypt(encrypted_data).decode())
             except Exception as e:
