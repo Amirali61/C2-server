@@ -126,7 +126,6 @@ class EncryptedServer:
         except Exception as e:
             print(f"Error decrypting data: {e}")
 
-
     def handle_response(self, command: str):
         if "del" in command:
             print(self.decrypt(self.conn.recv(1024)).decode())
@@ -161,7 +160,6 @@ class EncryptedServer:
 
         else:
             self.receive_data()
-
 
     def run(self):
         try:

