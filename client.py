@@ -6,6 +6,7 @@ import subprocess
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 import platform
+import psutil
 
 
 
@@ -354,6 +355,78 @@ class ClientHandler:
             file.write(data)
             file.close()
             # print("\nFile received successfully.")
+
+    def get_system_info(self):
+        try:
+            cpu_info = {
+                'physical_cores': psutil.cpu_count(logical=False),
+                'total_cores': psutil.cpu_count(logical=True),
+                'cpu_freq': psutil.cpu_freq()._asdict() if psutil.cpu_freq() else {},
+                'cpu_percent': psutil.cpu_percent(interval=1)
+            }
+
+            mem = psutil.virtual_memory()
+            mem_info = {
+                'total': mem.total,
+                'available': mem.available,
+                'percent': mem.percent,
+                'used': mem.used,
+                'free': mem.free
+            }
+
+            system_info = {
+                'computer_name': platform.node(),
+                'os_name': platform.system(),
+                'os_version': platform.version(),
+                'os_release': platform.release(),
+                'architecture': platform.machine(),
+                'processor': platform.processor()
+            }
+
+            return {
+                'cpu': cpu_info,
+                'memory': mem_info,
+                'system': system_info
+            }
+        except Exception as e:
+            return {'error': str(e)}
+
+    def get_cpu_usage(self):
+        try:
+            return psutil.cpu_percent(interval=1)
+        except:
+            return 0
+    
+    def get_memory_usage(self):
+        try:
+            mem = psutil.virtual_memory()
+            return {
+                'total': mem.total,
+                'available': mem.available,
+                'percent': mem.percent,
+                'used': mem.used,
+                'free': mem.free
+            }
+        except:
+            return {'error': 'Failed to get memory information'}
+
+    def get_computer_name(self):
+        try:
+            return platform.node()
+        except:
+            return 'Unknown'
+
+    def get_os_info(self):
+        try:
+            return {
+                'system': platform.system(),
+                'release': platform.release(),
+                'version': platform.version(),
+                'machine': platform.machine(),
+                'processor': platform.processor()
+            }
+        except:
+            return {'error': 'Failed to get OS information'} 
         
     def upload(self,filename):
         current_path =  os.path.abspath(os.getcwd())
@@ -487,7 +560,13 @@ class ClientHandler:
                 
                 elif cmd == "hostname":
                     if os_name=="Windows":
-                        result = subprocess.run("systeminfo", shell=True, capture_output=True, text=True).stdout
+                        sys_info = self.get_system_info()
+                        result = f"Computer Name: {sys_info['system']['computer_name']}\n"
+                        result += f"OS Version: {sys_info['system']['os_version']}\n"
+                        result += f"OS Release: {sys_info['system']['os_release']}\n"
+                        result += f"Architecture: {sys_info['system']['architecture']}\n"
+                        result += f"Processor: {sys_info['system']['processor']}\n"
+                        result += f"CPU Cores: {sys_info['cpu']['physical_cores']} physical, {sys_info['cpu']['total_cores']} total"
                     else:
                         result = subprocess.run("hostnamectl", shell=True, capture_output=True, text=True).stdout
                     self.send_data(result.encode())
@@ -529,36 +608,16 @@ class ClientHandler:
                 elif cmd == "system":
                     try:
                         if os_name=="Windows":
-                            cpu_cmd = 'wmic cpu get loadpercentage'
-                            mem_cmd = 'wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value'
-                            
-                            cpu_result = subprocess.run(cpu_cmd, shell=True, capture_output=True, text=True)
-                            mem_result = subprocess.run(mem_cmd, shell=True, capture_output=True, text=True)
-                            
-                            cpu_lines = cpu_result.stdout.strip().split('\n')
-                            mem_lines = mem_result.stdout.strip().split('\n')
-                            
-                            cpu_usage = cpu_lines[2].strip() if len(cpu_lines) > 1 else "0"
-                            if not cpu_usage.isdigit():
-                                cpu_usage = "0"
-                            
-                            total_mem = 0
-                            free_mem = 0
-                            for line in mem_lines:
-                                if "TotalVisibleMemorySize" in line:
-                                    total_mem = int(line.split('=')[1].strip())
-                                elif "FreePhysicalMemory" in line:
-                                    free_mem = int(line.split('=')[1].strip())
-                            
-                            used_mem = total_mem - free_mem
-                            mem_percent = (used_mem / total_mem * 100) if total_mem > 0 else 0
+                            sys_info = self.get_system_info()
+                            cpu_usage = sys_info['cpu']['cpu_percent']
+                            mem_info = sys_info['memory']
                             
                             output = "System Resource Usage:\n"
                             output += f"CPU Usage: {cpu_usage}%\n"
-                            output += f"Memory Usage: {mem_percent:.1f}%\n"
-                            output += f"Total Memory: {total_mem/1024/1024:.1f} GB\n"
-                            output += f"Used Memory: {used_mem/1024/1024:.1f} GB\n"
-                            output += f"Free Memory: {free_mem/1024/1024:.1f} GB"
+                            output += f"Memory Usage: {mem_info['percent']:.1f}%\n"
+                            output += f"Total Memory: {mem_info['total']/1024/1024/1024:.1f} GB\n"
+                            output += f"Used Memory: {mem_info['used']/1024/1024/1024:.1f} GB\n"
+                            output += f"Free Memory: {mem_info['free']/1024/1024/1024:.1f} GB"
                         else:
                             cpu_cmd = "top -bn1 | grep 'Cpu(s)' | awk '{print $2}'"
                             mem_cmd = "free -m | grep Mem"
