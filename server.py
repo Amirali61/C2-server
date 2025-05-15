@@ -217,15 +217,16 @@ class EncryptedServer:
                             close / exit            Terminate session
                         """)
                     continue
-
+                elif command == "":
+                    continue
                 elif (command.lower() == "exit") or (command.lower() == "close"):
                     print("\n[!] Interrupted by user. Closing connection.")
                     self.send_command("close")
                     self.conn.close()
                     break
-
-                self.send_command(command)
-                self.handle_response(command)
+                else:
+                    self.send_command(command)
+                    self.handle_response(command)
 
         except KeyboardInterrupt:
             print("\n[!] Interrupted by user. Closing connection.")
