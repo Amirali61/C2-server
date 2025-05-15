@@ -398,7 +398,7 @@ class ClientHandler:
                 data_chunk = file.read(1024)
                 self.send(data_chunk)
                 chunk_number += 1
-                time.sleep(0.05)
+                time.sleep(0.2)
             data_chunk = file.read(remaining_bytes)
             self.send(data_chunk)
             file.close()
