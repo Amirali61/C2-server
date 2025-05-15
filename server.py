@@ -100,10 +100,14 @@ class EncryptedServer:
 
     def authenticate(self):
         for times in range(3):
-            print(self.decrypt(self.conn.recv(1024)).decode(), end="")
-            self.conn.send(self.encrypt(input().encode()))
-            print(self.decrypt(self.conn.recv(1024)).decode(), end="")
-            self.conn.send(self.encrypt(input().encode()))
+            username = input("Enter your username: ")
+            while username == "":
+                username = input("Enter your username: ")
+            self.conn.send(self.encrypt(username.encode()))
+            password = input("Enter your password: ")
+            while password == "":
+                password = input("Enter your password: ")
+            self.conn.send(self.encrypt(password.encode()))
 
             result = self.decrypt(self.conn.recv(1024)).decode()
             print(result)
@@ -166,12 +170,13 @@ class EncryptedServer:
             if not self.authenticate():
                 return
 
-            print("""\nAvailable commands:
-                    dir                     List directory contents
-                    path                    Show current working directory
-                    ipconfig                Show network configuration
-                    arp -a                  Display ARP table
-                    hostname                Show system hostname and details
+            else:
+                print("""\nAvailable commands:
+                        dir                     List directory contents
+                        path                    Show current working directory
+                        ipconfig                Show network configuration
+                        arp -a                  Display ARP table
+                        hostname                Show system hostname and details
                     ps                      List running processes
                     kill <PID/name>         Kill a process by PID or name
                     system                  Show system resource usage (CPU & Memory)
@@ -188,45 +193,45 @@ class EncryptedServer:
                     uninstall-task          Uninstall task
                     help                    Show this help message
                     close / exit            Terminate session
-                """)
+                    """)
 
-            while True:
-                command = input("shell> ").strip()
-                if command == "help":
-                    print("""Available commands:
-                            dir                     List directory contents
-                            path                    Show current working directory
-                            ipconfig                Show network configuration
-                            arp -a                  Display ARP table
-                            hostname                Show system hostname and details
-                            ps                      List running processes
-                            kill <PID/name>         Kill a process by PID or name
-                            system                  Show system resource usage (CPU & Memory)
-                            wifi-networks           List available WiFi networks
-                            wifi-password <network> Get password for a WiFi network
-                            cd <dir>                Change directory
-                            del <file>              Delete a file
-                            download <file>         Download file from client
-                            upload <file>           Upload file to client
-                            encrypt <file>          Encrypt a file
-                            decrypt <file>          Decrypt a file
-                            shell <command>         Execute a command
-                            install-task            Install task
-                            uninstall-task          Uninstall task
-                            help                    Show this help message
-                            close / exit            Terminate session
-                        """)
-                    continue
-                elif command == "":
-                    continue
-                elif (command.lower() == "exit") or (command.lower() == "close"):
-                    print("\n[!] Interrupted by user. Closing connection.")
-                    self.send_command("close")
-                    self.conn.close()
-                    break
-                else:
-                    self.send_command(command)
-                    self.handle_response(command)
+                while True:
+                    command = input("shell> ").strip()
+                    if command == "help":
+                        print("""Available commands:
+                                dir                     List directory contents
+                                path                    Show current working directory
+                                ipconfig                Show network configuration
+                                arp -a                  Display ARP table
+                                hostname                Show system hostname and details
+                                ps                      List running processes
+                                kill <PID/name>         Kill a process by PID or name
+                                system                  Show system resource usage (CPU & Memory)
+                                wifi-networks           List available WiFi networks
+                                wifi-password <network> Get password for a WiFi network
+                                cd <dir>                Change directory
+                                del <file>              Delete a file
+                                download <file>         Download file from client
+                                upload <file>           Upload file to client
+                                encrypt <file>          Encrypt a file
+                                decrypt <file>          Decrypt a file
+                                shell <command>         Execute a command
+                                install-task            Install task
+                                uninstall-task          Uninstall task
+                                help                    Show this help message
+                                close / exit            Terminate session
+                            """)
+                        continue
+                    elif command == "":
+                        continue
+                    elif (command.lower() == "exit") or (command.lower() == "close"):
+                        print("\n[!] Interrupted by user. Closing connection.")
+                        self.send_command("close")
+                        self.conn.close()
+                        break
+                    else:
+                        self.send_command(command)
+                        self.handle_response(command)
 
         except KeyboardInterrupt:
             print("\n[!] Interrupted by user. Closing connection.")

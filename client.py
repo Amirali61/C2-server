@@ -437,11 +437,8 @@ class ClientHandler:
         logged_in = False
         counter = 0
         while not logged_in:
-            self.send(encrypt(b"Username: "))
             username = decrypt(self.recv()).decode().strip()
-            self.send(encrypt(b"Password: "))
             password = decrypt(self.recv()).decode().strip()
-
             if username == valid_user and password == valid_pass:
                 self.send(encrypt(b"Authentication successful"))
                 logged_in = True
