@@ -88,7 +88,7 @@ class EncryptedServer:
                 bar = '=' * filled + '-' * (bar_width - filled)
                 print(f'Progress: [{bar}] {progress:.1f}%', end='\r', flush=True)
                 chunk_number += 1
-                time.sleep(0.2)
+                time.sleep(0.4)
             data_chunk = file.read(remaining_bytes)
             self.conn.sendall(data_chunk)
             print("\nLast chunk sent")
