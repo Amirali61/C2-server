@@ -330,23 +330,42 @@ class ClientHandler:
         return self.connection.recv(size)
     
     def download(self,filename):
-        file_size = int(decrypt(self.recv(1024)).decode())
-        block_size = 1024
-        num_blocks = file_size // block_size
-        remaining_bytes = file_size % block_size
-        with open(f'{filename}','wb') as file:
-            # full_data = b''
-            chunk_number = 1
-            for i in range(num_blocks):    
-                data = self.connection.recv(1024)
-                # full_data += data
-                file.write(data)
-                chunk_number += 1
-            data = self.connection.recv(remaining_bytes)
-            # full_data += data
-            # file.write(full_data)
-            file.write(data)
-            file.close()
+        try:
+            file_size = int(decrypt(self.recv(1024)).decode())
+            block_size = 1024
+            num_blocks = file_size // block_size
+            remaining_bytes = file_size % block_size
+            
+            with open(f'{filename}','wb') as file:
+                chunk_number = 1
+                for i in range(num_blocks):    
+                    try:
+                        data = self.connection.recv(1024)
+                        if not data:  # Connection closed
+                            raise ConnectionError("Connection lost during download")
+                        decrypted_data = decrypt(data)
+                        file.write(decrypted_data)
+                        chunk_number += 1
+                    except Exception as e:
+                        self.send(encrypt(f"Error during download at chunk {chunk_number}: {str(e)}".encode()))
+                        return False
+                
+                try:
+                    data = self.connection.recv(remaining_bytes)
+                    if not data:  # Connection closed
+                        raise ConnectionError("Connection lost during download")
+                    decrypted_data = decrypt(data)
+                    file.write(decrypted_data)
+                except Exception as e:
+                    self.send(encrypt(f"Error during final chunk download: {str(e)}".encode()))
+                    return False
+                
+                file.close()
+                self.send(encrypt(b"Download completed successfully"))
+                return True
+        except Exception as e:
+            self.send(encrypt(f"Download failed: {str(e)}".encode()))
+            return False
 
     def get_system_info(self):
         try:
@@ -384,24 +403,52 @@ class ClientHandler:
             return {'error': str(e)}
         
     def upload(self,filename):
-        current_path =  os.path.abspath(os.getcwd())
-        file_path = os.path.join(current_path,filename)
-        file_size_upload = str(os.path.getsize(file_path))
-        self.send(encrypt(file_size_upload.encode()))
-        time.sleep(0.2)
-        block_size = 1024
-        num_blocks = int(file_size_upload) // block_size
-        remaining_bytes = int(file_size_upload) % block_size
-        with open(filename, 'rb') as file:
-            chunk_number = 1
-            for i in range(num_blocks):
-                data_chunk = file.read(1024)
-                self.send(data_chunk)
-                chunk_number += 1
-                time.sleep(0.4)
-            data_chunk = file.read(remaining_bytes)
-            self.send(data_chunk)
-            file.close()
+        try:
+            current_path = os.path.abspath(os.getcwd())
+            file_path = os.path.join(current_path,filename)
+            
+            if not os.path.exists(file_path):
+                self.send(encrypt(f"File {filename} not found".encode()))
+                return False
+                
+            file_size_upload = str(os.path.getsize(file_path))
+            self.send(encrypt(file_size_upload.encode()))
+            time.sleep(0.2)
+            
+            block_size = 1024
+            num_blocks = int(file_size_upload) // block_size
+            remaining_bytes = int(file_size_upload) % block_size
+            
+            with open(filename, 'rb') as file:
+                chunk_number = 1
+                for i in range(num_blocks):
+                    try:
+                        data_chunk = file.read(1024)
+                        if not data_chunk:  # End of file
+                            break
+                        encrypted_chunk = encrypt(data_chunk)
+                        self.send(encrypted_chunk)
+                        chunk_number += 1
+                        time.sleep(0.2)
+                    except Exception as e:
+                        self.send(encrypt(f"Error during upload at chunk {chunk_number}: {str(e)}".encode()))
+                        return False
+                
+                try:
+                    data_chunk = file.read(remaining_bytes)
+                    if data_chunk:  # Only send if there's remaining data
+                        encrypted_chunk = encrypt(data_chunk)
+                        self.send(encrypted_chunk)
+                except Exception as e:
+                    self.send(encrypt(f"Error during final chunk upload: {str(e)}".encode()))
+                    return False
+                
+                file.close()
+                self.send(encrypt(b"Upload completed successfully"))
+                return True
+        except Exception as e:
+            self.send(encrypt(f"Upload failed: {str(e)}".encode()))
+            return False
 
     def encrypt_file(self , filename):
         current_path =  os.path.abspath(os.getcwd())

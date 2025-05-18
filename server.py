@@ -31,69 +31,112 @@ class EncryptedServer:
         return cipher.decrypt(data)
 
     def download(self,filename):
-        file_size = int(self.decrypt(self.conn.recv(1024)).decode())
-        print(f"File size: {file_size} bytes")
-        block_size = 1024
-        num_blocks = file_size // block_size
-        remaining_bytes = file_size % block_size
-        if remaining_bytes != 0:
-            print(f"chunks: {num_blocks + 1}")
-        else:
-            print(f"chunks: {num_blocks}")
+        try:
+            file_size = int(self.decrypt(self.conn.recv(1024)).decode())
+            print(f"File size: {file_size} bytes")
+            block_size = 1024
+            num_blocks = file_size // block_size
+            remaining_bytes = file_size % block_size
+            if remaining_bytes != 0:
+                print(f"chunks: {num_blocks + 1}")
+            else:
+                print(f"chunks: {num_blocks}")
 
-        with open(f'{filename}','wb') as file:
-            # full_data = b''
-            chunk_number = 1
-            for i in range(num_blocks):    
-                data = self.conn.recv(1024)
-                # full_data += data
-                file.write(data)
-                progress = (chunk_number / num_blocks) * 100
-                bar_width = 50
-                filled = int(bar_width * chunk_number // num_blocks)
-                bar = '=' * filled + '-' * (bar_width - filled)
-                print(f'Progress: [{bar}] {progress:.1f}%', end='\r', flush=True)
-                chunk_number += 1
-            data = self.conn.recv(remaining_bytes)
-            # full_data += data
-            print("\nLast Chunk received")
-            # file.write(full_data)
-            file.write(data)
-            file.close()
-            print("File received successfully.")
+            with open(f'{filename}','wb') as file:
+                chunk_number = 1
+                for i in range(num_blocks):    
+                    try:
+                        data = self.conn.recv(1024)
+                        if not data:  # Connection closed
+                            raise ConnectionError("Connection lost during download")
+                        decrypted_data = self.decrypt(data)
+                        file.write(decrypted_data)
+                        progress = (chunk_number / num_blocks) * 100
+                        bar_width = 50
+                        filled = int(bar_width * chunk_number // num_blocks)
+                        bar = '=' * filled + '-' * (bar_width - filled)
+                        print(f'Progress: [{bar}] {progress:.1f}%', end='\r', flush=True)
+                        chunk_number += 1
+                    except Exception as e:
+                        print(f"\nError during download at chunk {chunk_number}: {str(e)}")
+                        return False
+                
+                try:
+                    data = self.conn.recv(remaining_bytes)
+                    if not data:  # Connection closed
+                        raise ConnectionError("Connection lost during download")
+                    decrypted_data = self.decrypt(data)
+                    file.write(decrypted_data)
+                    print("\nLast Chunk received")
+                except Exception as e:
+                    print(f"\nError during final chunk download: {str(e)}")
+                    return False
+                
+                file.close()
+                print("File received successfully.")
+                return True
+        except Exception as e:
+            print(f"Download failed: {str(e)}")
+            return False
 
     def upload(self,filename):
-        current_path =  os.path.abspath(os.getcwd())
-        file_path = os.path.join(current_path,filename)
-        file_size_upload = str(os.path.getsize(file_path))
-        self.conn.sendall(self.encrypt(file_size_upload.encode()))
-        print(f"File size: {file_size_upload} bytes")
-        time.sleep(0.2)
-        block_size = 1024
-        num_blocks = int(file_size_upload) // block_size
-        remaining_bytes = int(file_size_upload) % block_size
-        if remaining_bytes != 0:
-            print(f"chunks: {num_blocks + 1}")
-        else:
-            print(f"chunks: {num_blocks}")
+        try:
+            current_path = os.path.abspath(os.getcwd())
+            file_path = os.path.join(current_path,filename)
+            
+            if not os.path.exists(file_path):
+                print(f"File {filename} not found")
+                return False
+                
+            file_size_upload = str(os.path.getsize(file_path))
+            self.conn.sendall(self.encrypt(file_size_upload.encode()))
+            print(f"File size: {file_size_upload} bytes")
+            time.sleep(0.2)
+            
+            block_size = 1024
+            num_blocks = int(file_size_upload) // block_size
+            remaining_bytes = int(file_size_upload) % block_size
+            if remaining_bytes != 0:
+                print(f"chunks: {num_blocks + 1}")
+            else:
+                print(f"chunks: {num_blocks}")
 
-        with open(filename, 'rb') as file:
-            chunk_number = 1
-            for i in range(num_blocks):
-                data_chunk = file.read(1024)
-                self.conn.sendall(data_chunk)
-                progress = (chunk_number / num_blocks) * 100
-                bar_width = 50
-                filled = int(bar_width * chunk_number // num_blocks)
-                bar = '=' * filled + '-' * (bar_width - filled)
-                print(f'Progress: [{bar}] {progress:.1f}%', end='\r', flush=True)
-                chunk_number += 1
-                time.sleep(0.4)
-            data_chunk = file.read(remaining_bytes)
-            self.conn.sendall(data_chunk)
-            print("\nLast chunk sent")
-            file.close()
-            print("File sent successfully.")
+            with open(filename, 'rb') as file:
+                chunk_number = 1
+                for i in range(num_blocks):
+                    try:
+                        data_chunk = file.read(1024)
+                        if not data_chunk:  # End of file
+                            break
+                        encrypted_chunk = self.encrypt(data_chunk)
+                        self.conn.sendall(encrypted_chunk)
+                        progress = (chunk_number / num_blocks) * 100
+                        bar_width = 50
+                        filled = int(bar_width * chunk_number // num_blocks)
+                        bar = '=' * filled + '-' * (bar_width - filled)
+                        print(f'Progress: [{bar}] {progress:.1f}%', end='\r', flush=True)
+                        chunk_number += 1
+                        time.sleep(0.2)
+                    except Exception as e:
+                        print(f"\nError during upload at chunk {chunk_number}: {str(e)}")
+                        return False
+                
+                try:
+                    data_chunk = file.read(remaining_bytes)
+                    if data_chunk:  # Only send if there's remaining data
+                        encrypted_chunk = self.encrypt(data_chunk)
+                        self.conn.sendall(encrypted_chunk)
+                        print("\nLast chunk sent")
+                except Exception as e:
+                    print(f"\nError during final chunk upload: {str(e)}")
+                    return False
+                
+                file.close()
+                print("File sent successfully.")
+                return True
+        except Exception as e:
+            print(f"Upload failed: {str(e)}")
+            return False
 
     def to_chunks(self, data: bytes, chunk_size: int = 1024):
         return [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
