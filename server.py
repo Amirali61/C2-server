@@ -47,7 +47,7 @@ class EncryptedServer:
                 for i in range(num_blocks):    
                     try:
                         data = self.conn.recv(1024)
-                        if not data:  # Connection closed
+                        if not data:
                             raise ConnectionError("Connection lost during download")
                         decrypted_data = self.decrypt(data)
                         file.write(decrypted_data)
@@ -63,7 +63,7 @@ class EncryptedServer:
                 
                 try:
                     data = self.conn.recv(remaining_bytes)
-                    if not data:  # Connection closed
+                    if not data:
                         raise ConnectionError("Connection lost during download")
                     decrypted_data = self.decrypt(data)
                     file.write(decrypted_data)
@@ -106,7 +106,7 @@ class EncryptedServer:
                 for i in range(num_blocks):
                     try:
                         data_chunk = file.read(1024)
-                        if not data_chunk:  # End of file
+                        if not data_chunk:
                             break
                         encrypted_chunk = self.encrypt(data_chunk)
                         self.conn.sendall(encrypted_chunk)
@@ -123,7 +123,7 @@ class EncryptedServer:
                 
                 try:
                     data_chunk = file.read(remaining_bytes)
-                    if data_chunk:  # Only send if there's remaining data
+                    if data_chunk:
                         encrypted_chunk = self.encrypt(data_chunk)
                         self.conn.sendall(encrypted_chunk)
                         print("\nLast chunk sent")
