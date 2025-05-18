@@ -79,8 +79,18 @@ class EncryptedServer:
             print(f"Download failed: {str(e)}")
             return False
 
-    def upload(self,filename):
+    def upload(self,filename,speed="S"):
         try:
+            breakTime = 0.2
+            if speed == "S" or speed == "s" or speed == "":
+                breakTime = 0.2
+            elif speed == "M" or speed == "m":
+                breakTime = 0.1
+            elif speed == "F" or speed == "f":
+                breakTime = 0.05
+            else:
+                breakTime = 0.2
+
             current_path = os.path.abspath(os.getcwd())
             file_path = os.path.join(current_path,filename)
             
@@ -116,7 +126,7 @@ class EncryptedServer:
                         bar = '=' * filled + '-' * (bar_width - filled)
                         print(f'Progress: [{bar}] {progress:.1f}%', end='\r', flush=True)
                         chunk_number += 1
-                        time.sleep(0.2)
+                        time.sleep(breakTime)
                     except Exception as e:
                         print(f"\nError during upload at chunk {chunk_number}: {str(e)}")
                         return False
@@ -182,12 +192,17 @@ class EncryptedServer:
             file_name = command[7:]
             self.send_command(file_name)
             time.sleep(0.1)
-            self.upload(file_name)
+            speed = input("Enter the speed of the upload (S[low],M[medium],F[fast],Default[slow]): ")
+            self.upload(file_name,speed)
 
         elif "download" in command:
             file_name = command[9:]
             self.send_command(file_name)
             time.sleep(0.1)
+            speed = input("Enter the speed of the download (S[low],M[medium],F[fast],Default[slow]): ")
+            if speed == "":
+                speed = "S"
+            self.send_command(speed)
             self.download(file_name)
         
         elif "encrypt" in command:

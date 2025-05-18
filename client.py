@@ -361,7 +361,6 @@ class ClientHandler:
                     return False
                 
                 file.close()
-                self.send(encrypt(b"Download completed successfully"))
                 return True
         except Exception as e:
             self.send(encrypt(f"Download failed: {str(e)}".encode()))
@@ -402,7 +401,7 @@ class ClientHandler:
         except Exception as e:
             return {'error': str(e)}
         
-    def upload(self,filename):
+    def upload(self,filename,speed="S"):
         try:
             current_path = os.path.abspath(os.getcwd())
             file_path = os.path.join(current_path,filename)
@@ -410,6 +409,14 @@ class ClientHandler:
             if not os.path.exists(file_path):
                 self.send(encrypt(f"File {filename} not found".encode()))
                 return False
+            if speed == "S" or speed == "s" or speed == "":
+                breakTime = 0.2
+            elif speed == "M" or speed == "m":
+                breakTime = 0.1
+            elif speed == "F" or speed == "f":
+                breakTime = 0.05    
+            else:
+                breakTime = 0.2
                 
             file_size_upload = str(os.path.getsize(file_path))
             self.send(encrypt(file_size_upload.encode()))
@@ -429,7 +436,7 @@ class ClientHandler:
                         encrypted_chunk = encrypt(data_chunk)
                         self.send(encrypted_chunk)
                         chunk_number += 1
-                        time.sleep(0.2)
+                        time.sleep(breakTime)
                     except Exception as e:
                         self.send(encrypt(f"Error during upload at chunk {chunk_number}: {str(e)}".encode()))
                         return False
@@ -444,7 +451,6 @@ class ClientHandler:
                     return False
                 
                 file.close()
-                self.send(encrypt(b"Upload completed successfully"))
                 return True
         except Exception as e:
             self.send(encrypt(f"Upload failed: {str(e)}".encode()))
@@ -680,7 +686,8 @@ class ClientHandler:
 
                 elif cmd.startswith("download "):
                     file_name = decrypt(self.recv()).decode()
-                    self.upload(file_name)
+                    speed = decrypt(self.recv()).decode()
+                    self.upload(file_name,speed)
 
                 elif cmd.startswith("upload "):
                     file_name = decrypt(self.recv()).decode()
